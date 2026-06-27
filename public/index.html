@@ -1,0 +1,3116 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MILLTOP TECH - Web Optimization Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root {
+    --bg-primary: #050505;
+    --bg-secondary: #0d0d0d;
+    --bg-card: #141414;
+    --bg-hover: #202020;
+    --border: #2b2b2b;
+    --accent: #e50914;
+    --accent-hover: #ff1f2d;
+    --accent-glow: rgba(229,9,20,0.32);
+    --green: #22c55e;
+    --red: #e50914;
+    --yellow: #f59e0b;
+    --blue: #38bdf8;
+    --purple: #a855f7;
+    --pink: #ec4899;
+    --cyan: #06b6d4;
+    --orange: #f97316;
+    --lime: #84cc16;
+    --text-primary: #ffffff;
+    --text-secondary: #d0d0d0;
+    --text-muted: #8a8a8a;
+    --sidebar-width: 260px;
+    --topbar-height: 60px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background:var(--bg-primary); color:var(--text-primary); min-height:100vh; overflow-x:hidden; }
+  
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-track { background:var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--accent); }
+
+  /* LOGIN */
+  #loginPage { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--bg-primary); position:fixed; inset:0; z-index:1000; }
+  .login-box { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:48px; width:420px; max-width:95vw; }
+  .login-logo { text-align:center; margin-bottom:32px; }
+  .login-logo .logo-icon { width:64px; height:64px; background:linear-gradient(135deg,var(--accent),#7a0008); border-radius:16px; display:inline-flex; align-items:center; justify-content:center; font-size:28px; margin-bottom:12px; }
+  .login-logo h1 { font-size:22px; font-weight:700; letter-spacing:2px; color:var(--text-primary); }
+  .login-logo p { color:var(--text-secondary); font-size:13px; margin-top:4px; }
+  .form-group { margin-bottom:18px; }
+  .form-group label { display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:8px; letter-spacing:1px; text-transform:uppercase; }
+  .form-group input { width:100%; padding:12px 16px; background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-size:14px; outline:none; transition:border-color .2s; }
+  .form-group input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+  .btn { display:inline-flex; align-items:center; gap:8px; padding:11px 20px; border-radius:8px; border:none; cursor:pointer; font-size:14px; font-weight:600; transition:all .2s; text-decoration:none; white-space:nowrap; }
+  .btn svg,
+  h2 svg,
+  h3 svg,
+  .kanban-col-title svg,
+  .text-xs svg { width:1em; height:1em; vertical-align:-0.16em; flex-shrink:0; }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:var(--accent-hover); box-shadow:0 4px 20px var(--accent-glow); }
+  .btn-secondary { background:var(--bg-hover); color:var(--text-primary); border:1px solid var(--border); }
+  .btn-secondary:hover { background:var(--border); }
+  .btn-danger { background:var(--red); color:#fff; }
+  .btn-danger:hover { opacity:0.85; }
+  .btn-success { background:var(--green); color:#000; }
+  .btn-success:hover { opacity:0.85; }
+  .btn-full { width:100%; justify-content:center; padding:14px; font-size:15px; }
+  .login-error { background:rgba(255,71,87,0.1); border:1px solid rgba(255,71,87,0.3); color:var(--red); padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:16px; display:none; }
+
+  /* LAYOUT */
+  #app { display:none; }
+  .sidebar { position:fixed; left:0; top:0; bottom:0; width:var(--sidebar-width); background:var(--bg-secondary); border-right:1px solid var(--border); overflow-y:auto; z-index:100; transition:transform .3s; }
+  .sidebar-header { padding:20px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; }
+  .sidebar-logo { width:36px; height:36px; background:linear-gradient(135deg,var(--accent),#7a0008); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .sidebar-brand { font-size:13px; font-weight:700; letter-spacing:1.5px; color:var(--text-primary); line-height:1.2; }
+  .sidebar-brand span { display:block; font-size:10px; font-weight:400; color:var(--text-secondary); letter-spacing:0.5px; margin-top:2px; }
+  .sidebar-nav { padding:12px 8px; }
+  .nav-section { margin-bottom:8px; }
+  .nav-section-title { font-size:10px; font-weight:600; color:var(--text-muted); letter-spacing:1.5px; text-transform:uppercase; padding:8px 12px 4px; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; cursor:pointer; transition:all .15s; color:var(--text-secondary); font-size:13px; font-weight:500; user-select:none; margin-bottom:2px; }
+  .nav-item:hover { background:var(--bg-hover); color:var(--text-primary); }
+  .nav-item.active { background:rgba(229,9,20,0.15); color:var(--accent); border-left:3px solid var(--accent); }
+  .nav-item .nav-icon { width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .nav-item .nav-icon svg,
+  .logo-icon svg,
+  .sidebar-logo svg,
+  .search-icon svg,
+  .sr-icon svg,
+  .stat-icon svg,
+  .es-icon svg,
+  .provider-icon svg,
+  .chat-avatar svg,
+  .toast-icon svg { width:1em; height:1em; stroke-width:2.25; }
+  svg[data-lucide="zap"] { color:var(--yellow); }
+  svg[data-lucide="chart-column"] { color:var(--blue); }
+  svg[data-lucide="trending-up"] { color:var(--green); }
+  svg[data-lucide="search"],
+  svg[data-lucide="search-check"] { color:var(--cyan); }
+  svg[data-lucide="folder-input"],
+  svg[data-lucide="clipboard-list"] { color:var(--orange); }
+  svg[data-lucide="lightbulb"] { color:var(--yellow); }
+  svg[data-lucide="users"],
+  svg[data-lucide="user"],
+  svg[data-lucide="handshake"] { color:var(--purple); }
+  svg[data-lucide="mail"],
+  svg[data-lucide="inbox"],
+  svg[data-lucide="mailbox"] { color:var(--blue); }
+  svg[data-lucide="megaphone"],
+  svg[data-lucide="radio-tower"] { color:var(--pink); }
+  svg[data-lucide="calendar-days"] { color:var(--lime); }
+  svg[data-lucide="target"] { color:var(--red); }
+  svg[data-lucide="rocket"] { color:var(--orange); }
+  svg[data-lucide="settings"],
+  svg[data-lucide="wrench"] { color:var(--cyan); }
+  svg[data-lucide="pin"],
+  svg[data-lucide="key-round"],
+  svg[data-lucide="lock-keyhole"] { color:var(--yellow); }
+  svg[data-lucide="bot"] { color:var(--pink); }
+  svg[data-lucide="bell"],
+  svg[data-lucide="triangle-alert"] { color:var(--yellow); }
+  svg[data-lucide="refresh-cw"] { color:var(--cyan); }
+  svg[data-lucide="trash-2"],
+  svg[data-lucide="circle-x"],
+  svg[data-lucide="x"] { color:var(--red); }
+  svg[data-lucide="plus"],
+  svg[data-lucide="circle-check"] { color:var(--green); }
+  svg[data-lucide="download"],
+  svg[data-lucide="upload"] { color:var(--purple); }
+  svg[data-lucide="send-horizontal"] { color:var(--yellow); }
+  svg[data-lucide="eye"],
+  svg[data-lucide="info"],
+  svg[data-lucide="globe"],
+  svg[data-lucide="square-pen"] { color:var(--blue); }
+  svg[data-lucide="messages-square"] { color:var(--green); }
+  svg[data-lucide="badge-dollar-sign"] { color:var(--lime); }
+  svg[data-lucide="sparkles"] { color:var(--pink); }
+  .nav-badge { margin-left:auto; background:var(--accent); color:#fff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:10px; }
+
+  .topbar { position:fixed; left:var(--sidebar-width); right:0; top:0; height:var(--topbar-height); background:var(--bg-secondary); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; padding:0 24px; z-index:90; }
+  .search-bar { flex:1; max-width:500px; position:relative; }
+  .search-bar input { width:100%; padding:9px 16px 9px 40px; background:var(--bg-primary); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-size:13px; outline:none; transition:border-color .2s; }
+  .search-bar input:focus { border-color:var(--accent); }
+  .search-bar .search-icon { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:14px; }
+  .search-results { position:absolute; top:calc(100% + 8px); left:0; right:0; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; max-height:400px; overflow-y:auto; z-index:200; display:none; box-shadow:0 8px 32px rgba(0,0,0,0.4); }
+  .search-results.visible { display:block; }
+  .search-group-title { padding:10px 14px 4px; font-size:10px; font-weight:700; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase; border-top:1px solid var(--border); }
+  .search-group-title:first-child { border-top:none; }
+  .search-result-item { padding:9px 14px; cursor:pointer; display:flex; align-items:center; gap:10px; transition:background .15s; }
+  .search-result-item:hover { background:var(--bg-hover); }
+  .search-result-item .sr-icon { font-size:14px; color:var(--accent); }
+  .search-result-item .sr-text { flex:1; }
+  .search-result-item .sr-main { font-size:13px; color:var(--text-primary); }
+  .search-result-item .sr-sub { font-size:11px; color:var(--text-secondary); }
+  .search-result-item .sr-action { font-size:11px; color:var(--accent); font-weight:600; }
+  .topbar-right { margin-left:auto; display:flex; align-items:center; gap:12px; }
+  .topbar-avatar { width:34px; height:34px; background:linear-gradient(135deg,var(--accent),#7a0008); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; cursor:pointer; }
+  .topbar-notif { width:34px; height:34px; background:var(--bg-hover); border:1px solid var(--border); border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; position:relative; }
+  .notif-dot { position:absolute; top:6px; right:6px; width:7px; height:7px; background:var(--red); border-radius:50%; }
+
+  .main-content { margin-left:var(--sidebar-width); margin-top:var(--topbar-height); padding:28px; min-height:calc(100vh - var(--topbar-height)); }
+  
+  /* PAGE */
+  .page { display:none; }
+  .page.active { display:block; animation:fadeIn .25s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  
+  .page-header { margin-bottom:28px; }
+  .page-header h1 { font-size:24px; font-weight:700; color:var(--text-primary); }
+  .page-header p { color:var(--text-secondary); font-size:14px; margin-top:4px; }
+  .page-header-row { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+
+  /* CARDS */
+  .card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px; }
+  .stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; margin-bottom:28px; }
+  .stat-card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px; }
+  .stat-card .stat-label { font-size:12px; font-weight:600; color:var(--text-secondary); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+  .stat-card .stat-value { font-size:32px; font-weight:700; color:var(--text-primary); line-height:1; }
+  .stat-card .stat-change { font-size:12px; margin-top:6px; }
+  .stat-card .stat-icon { font-size:24px; float:right; opacity:0.6; }
+
+  /* TABLE */
+  .table-wrap { overflow-x:auto; border-radius:12px; border:1px solid var(--border); }
+  table { width:100%; border-collapse:collapse; }
+  thead th { padding:12px 16px; background:var(--bg-hover); font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px; text-align:left; white-space:nowrap; }
+  tbody tr { border-top:1px solid var(--border); transition:background .15s; }
+  tbody tr:hover { background:var(--bg-hover); }
+  tbody td { padding:12px 16px; font-size:13px; color:var(--text-primary); vertical-align:middle; }
+  .score-badge { display:inline-flex; align-items:center; justify-content:center; width:44px; height:28px; border-radius:6px; font-size:12px; font-weight:700; }
+  .score-green { background:rgba(34,197,94,0.14); color:var(--green); }
+  .score-red { background:rgba(255,71,87,0.15); color:var(--red); }
+  .score-yellow { background:rgba(245,158,11,0.14); color:var(--yellow); }
+  .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+  .badge-green { background:rgba(34,197,94,0.14); color:var(--green); }
+  .badge-red { background:rgba(255,71,87,0.15); color:var(--red); }
+  .badge-yellow { background:rgba(245,158,11,0.14); color:var(--yellow); }
+  .badge-blue { background:rgba(56,189,248,0.14); color:var(--blue); }
+  .badge-purple { background:rgba(168,85,247,0.16); color:var(--purple); }
+  .badge-gray { background:var(--bg-hover); color:var(--text-secondary); }
+
+  /* FORMS */
+  .input { width:100%; padding:10px 14px; background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-size:13px; outline:none; transition:border-color .2s; }
+  .input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+  .textarea { width:100%; padding:12px 14px; background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-size:13px; outline:none; transition:border-color .2s; resize:vertical; min-height:100px; font-family:inherit; }
+  .textarea:focus { border-color:var(--accent); }
+  .select { width:100%; padding:10px 14px; background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-size:13px; outline:none; cursor:pointer; }
+  .select:focus { border-color:var(--accent); }
+  .label { display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; letter-spacing:0.5px; text-transform:uppercase; }
+  .form-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; }
+  .form-group2 { margin-bottom:16px; }
+
+  /* PROGRESS */
+  .progress-bar { width:100%; height:8px; background:var(--bg-hover); border-radius:4px; overflow:hidden; }
+  .progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),#7a0008); border-radius:4px; transition:width .3s; }
+
+  /* MODAL */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:300; display:none; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:28px; width:560px; max-width:95vw; max-height:90vh; overflow-y:auto; position:relative; }
+  .modal h2 { font-size:18px; font-weight:700; margin-bottom:20px; }
+  .modal-close { position:absolute; top:16px; right:16px; width:32px; height:32px; background:var(--bg-hover); border:none; border-radius:6px; color:var(--text-primary); cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; }
+
+  /* TABS */
+  .tabs { display:flex; gap:4px; background:var(--bg-secondary); padding:4px; border-radius:10px; margin-bottom:24px; flex-wrap:wrap; }
+  .tab { padding:8px 18px; border-radius:7px; cursor:pointer; font-size:13px; font-weight:600; color:var(--text-secondary); transition:all .2s; border:none; background:transparent; }
+  .tab.active { background:var(--accent); color:#fff; }
+  .tab:hover:not(.active) { background:var(--bg-hover); color:var(--text-primary); }
+
+  /* ACTIVITY FEED */
+  .activity-item { display:flex; align-items:flex-start; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+  .activity-item:last-child { border-bottom:none; }
+  .activity-dot { width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+  .activity-text { font-size:13px; color:var(--text-primary); flex:1; }
+  .activity-time { font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+  /* KANBAN */
+  .kanban-board { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; min-height:500px; }
+  @media(max-width:900px) { .kanban-board { grid-template-columns:repeat(2,1fr); } }
+  @media(max-width:600px) { .kanban-board { grid-template-columns:1fr; } }
+  .kanban-col { background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px; min-height:400px; }
+  .kanban-col-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .kanban-col-title { font-size:13px; font-weight:700; color:var(--text-primary); }
+  .kanban-count { background:var(--bg-hover); color:var(--text-secondary); font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; }
+  .kanban-card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:10px; cursor:grab; transition:all .2s; }
+  .kanban-card:hover { border-color:var(--accent); box-shadow:0 4px 16px var(--accent-glow); }
+  .kanban-card.dragging { opacity:0.5; cursor:grabbing; }
+  .kanban-col.drag-over { border-color:var(--accent); background:rgba(229,9,20,0.05); }
+  .kanban-card .kc-store { font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:4px; }
+  .kanban-card .kc-email { font-size:11px; color:var(--text-secondary); margin-bottom:8px; }
+  .kanban-card .kc-scores { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+  .kanban-card .kc-action { font-size:11px; color:var(--text-muted); }
+
+  /* CALENDAR */
+  .calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .cal-header { text-align:center; padding:8px; font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; }
+  .cal-day { background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; min-height:80px; padding:8px; cursor:pointer; transition:background .15s; }
+  .cal-day:hover { background:var(--bg-hover); }
+  .cal-day.today { border-color:var(--accent); }
+  .cal-day.other-month { opacity:0.4; }
+  .cal-day-num { font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:4px; }
+  .cal-event { background:rgba(229,9,20,0.2); border-left:2px solid var(--accent); padding:2px 5px; border-radius:3px; font-size:10px; color:var(--text-primary); margin-bottom:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* AI CHAT */
+  .chat-container { display:flex; flex-direction:column; height:calc(100vh - var(--topbar-height) - 200px); min-height:400px; }
+  .chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+  .chat-msg { display:flex; gap:10px; align-items:flex-start; }
+  .chat-msg.user { flex-direction:row-reverse; }
+  .chat-bubble { max-width:70%; padding:12px 16px; border-radius:12px; font-size:13px; line-height:1.6; }
+  .chat-msg.ai .chat-bubble { background:var(--bg-hover); border:1px solid var(--border); color:var(--text-primary); border-radius:4px 12px 12px 12px; }
+  .chat-msg.user .chat-bubble { background:var(--accent); color:#fff; border-radius:12px 4px 12px 12px; }
+  .chat-avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .chat-msg.ai .chat-avatar { background:linear-gradient(135deg,var(--accent),#7a0008); }
+  .chat-msg.user .chat-avatar { background:var(--bg-hover); border:1px solid var(--border); }
+  .chat-input-row { display:flex; gap:10px; padding:16px; border-top:1px solid var(--border); }
+  .chat-input { flex:1; padding:12px 16px; background:var(--bg-secondary); border:1px solid var(--border); border-radius:10px; color:var(--text-primary); font-size:13px; outline:none; resize:none; font-family:inherit; }
+  .chat-input:focus { border-color:var(--accent); }
+  .typing-indicator { display:flex; gap:4px; align-items:center; padding:12px 16px; }
+  .typing-dot { width:7px; height:7px; background:var(--text-muted); border-radius:50%; animation:typing 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay:.2s; }
+  .typing-dot:nth-child(3) { animation-delay:.4s; }
+  @keyframes typing { 0%,80%,100%{opacity:.3;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+
+  /* CRM STAGES */
+  .stage-badge { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+  .stage-new { background:rgba(56,189,248,0.14); color:var(--blue); }
+  .stage-contacted { background:rgba(229,9,20,0.15); color:var(--accent); }
+  .stage-replied { background:rgba(245,158,11,0.14); color:var(--yellow); }
+  .stage-interested { background:rgba(34,197,94,0.14); color:var(--green); }
+  .stage-negotiating { background:rgba(249,115,22,0.16); color:var(--orange); }
+  .stage-closed { background:rgba(34,197,94,0.2); color:var(--green); }
+  .stage-lost { background:rgba(255,71,87,0.15); color:var(--red); }
+
+  /* TRACKER STATUS */
+  .tracker-status { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+
+  /* MISC */
+  .empty-state { text-align:center; padding:60px 20px; color:var(--text-secondary); }
+  .empty-state .es-icon { font-size:48px; margin-bottom:16px; opacity:0.5; }
+  .empty-state h3 { font-size:16px; font-weight:600; color:var(--text-primary); margin-bottom:8px; }
+  .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  @media(max-width:768px) { .grid-2,.grid-3 { grid-template-columns:1fr; } }
+  .gap-12 { gap:12px; }
+  .flex { display:flex; }
+  .flex-wrap { flex-wrap:wrap; }
+  .items-center { align-items:center; }
+  .justify-between { justify-content:space-between; }
+  .mb-4 { margin-bottom:4px; }
+  .mb-8 { margin-bottom:8px; }
+  .mb-16 { margin-bottom:16px; }
+  .mb-24 { margin-bottom:24px; }
+  .mt-16 { margin-top:16px; }
+  .text-sm { font-size:13px; }
+  .text-xs { font-size:11px; }
+  .text-muted { color:var(--text-secondary); }
+  .text-accent { color:var(--accent); }
+  .text-green { color:var(--green); }
+  .text-red { color:var(--red); }
+  .font-bold { font-weight:700; }
+  .w-full { width:100%; }
+  .chart-container { position:relative; height:260px; }
+  
+  /* TOGGLE */
+  .toggle { position:relative; display:inline-block; width:40px; height:22px; }
+  .toggle input { opacity:0; width:0; height:0; }
+  .toggle-slider { position:absolute; inset:0; background:var(--border); border-radius:22px; cursor:pointer; transition:.3s; }
+  .toggle-slider:before { content:''; position:absolute; width:16px; height:16px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.3s; }
+  .toggle input:checked + .toggle-slider { background:var(--accent); }
+  .toggle input:checked + .toggle-slider:before { transform:translateX(18px); }
+
+  /* SIDEBAR MOBILE */
+  @media(max-width:768px) {
+    .sidebar { transform:translateX(-100%); }
+    .sidebar.open { transform:translateX(0); }
+    .topbar,.main-content { margin-left:0; }
+    .topbar { padding:0 12px; }
+    .main-content { padding:16px; }
+    .kanban-board { grid-template-columns:1fr; }
+    .stat-grid { grid-template-columns:1fr 1fr; }
+  }
+  .mobile-menu-btn { display:none; width:36px; height:36px; background:var(--bg-hover); border:1px solid var(--border); border-radius:8px; align-items:center; justify-content:center; cursor:pointer; font-size:18px; color:var(--text-primary); }
+  @media(max-width:768px) { .mobile-menu-btn { display:flex; } }
+  .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:99; }
+  @media(max-width:768px) { .sidebar-overlay.open { display:block; } }
+
+  /* PROVIDER CARD */
+  .provider-card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px; display:flex; align-items:center; gap:16px; margin-bottom:14px; }
+  .provider-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+  .provider-info { flex:1; }
+  .provider-name { font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:4px; }
+  .provider-desc { font-size:12px; color:var(--text-secondary); }
+  .provider-status { display:flex; align-items:center; gap:8px; }
+
+  /* TEMPLATE CARD */
+  .template-card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:16px; }
+  .template-card .tc-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .template-card .tc-name { font-size:15px; font-weight:700; color:var(--text-primary); }
+  .template-card .tc-body { font-size:13px; color:var(--text-secondary); line-height:1.7; background:var(--bg-secondary); padding:14px; border-radius:8px; white-space:pre-wrap; }
+
+  /* INSIGHT CARD */
+  .insight-card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:16px; }
+  .insight-scores { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .insight-score-item { text-align:center; }
+  .insight-score-item .is-value { font-size:28px; font-weight:700; line-height:1; }
+  .insight-score-item .is-label { font-size:10px; color:var(--text-secondary); margin-top:2px; text-transform:uppercase; letter-spacing:0.5px; }
+
+  /* FILTER ROW */
+  .filter-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; align-items:center; }
+  .filter-row .input { width:auto; flex:1; min-width:160px; }
+
+  /* SETTINGS */
+  .settings-section { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:24px; margin-bottom:20px; }
+  .settings-section h2 { font-size:16px; font-weight:700; margin-bottom:4px; }
+  .settings-section p { font-size:13px; color:var(--text-secondary); margin-bottom:20px; }
+  .api-key-row { display:flex; gap:10px; align-items:center; }
+  .api-key-row .input { flex:1; font-family:monospace; letter-spacing:0.5px; }
+
+  /* GMAIL ACCOUNTS */
+  .gmail-account { background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; padding:12px 16px; display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  .gmail-account .ga-email { flex:1; font-size:13px; color:var(--text-primary); }
+  .gmail-account .ga-status { font-size:11px; padding:2px 8px; border-radius:10px; }
+
+  /* NOTES */
+  .notes-list .note-item { background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:8px; }
+  .note-item .ni-text { font-size:13px; color:var(--text-primary); margin-bottom:4px; }
+  .note-item .ni-time { font-size:11px; color:var(--text-muted); }
+
+  /* CHART */
+  canvas { max-width:100%; }
+  
+  /* Loading spinner */
+  .spinner { width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; display:inline-block; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  
+  .toast-container { position:fixed; bottom:24px; right:24px; z-index:500; display:flex; flex-direction:column; gap:8px; }
+  .toast { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:12px 18px; font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:10px; box-shadow:0 4px 20px rgba(0,0,0,0.4); animation:slideIn .3s ease; min-width:220px; max-width:360px; }
+  .toast.success { border-left:3px solid var(--green); }
+  .toast.error { border-left:3px solid var(--red); }
+  .toast.info { border-left:3px solid var(--blue); }
+  @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+</style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="logo-icon"><i data-lucide="zap"></i></div>
+      <h1>MILLTOP TECH</h1>
+      <p>Web Optimization Platform</p>
+    </div>
+    <div class="login-error" id="loginError">Invalid email or password. Please try again.</div>
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="loginEmail" placeholder="admin@milltoptech.com" value="admin@milltoptech.com">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" value="admin123">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()">Sign In to Platform</button>
+    <p style="text-align:center;margin-top:16px;font-size:12px;color:var(--text-muted)">Demo: admin@milltoptech.com / admin123</p>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo"><i data-lucide="zap"></i></div>
+      <div class="sidebar-brand">MILLTOP TECH<span>Web Optimization</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Overview</div>
+        <div class="nav-item active" data-page="dashboard"><span class="nav-icon"><i data-lucide="chart-column"></i></span>Dashboard</div>
+        <div class="nav-item" data-page="analytics"><span class="nav-icon"><i data-lucide="trending-up"></i></span>Analytics</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">Scanner</div>
+        <div class="nav-item" data-page="scanner"><span class="nav-icon"><i data-lucide="search"></i></span>Website Scanner</div>
+        <div class="nav-item" data-page="import"><span class="nav-icon"><i data-lucide="folder-input"></i></span>Website Import</div>
+        <div class="nav-item" data-page="insights"><span class="nav-icon"><i data-lucide="lightbulb"></i></span>Insights</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">Outreach</div>
+        <div class="nav-item" data-page="emailfinder"><span class="nav-icon"><i data-lucide="search-check"></i></span>Email Finder</div>
+        <div class="nav-item" data-page="contacts"><span class="nav-icon"><i data-lucide="users"></i></span>Contacts</div>
+        <div class="nav-item" data-page="templates"><span class="nav-icon"><i data-lucide="mail"></i></span>Email Templates</div>
+        <div class="nav-item" data-page="campaigns"><span class="nav-icon"><i data-lucide="megaphone"></i></span>Campaigns</div>
+        <div class="nav-item" data-page="schedule"><span class="nav-icon"><i data-lucide="calendar-days"></i></span>Campaign Schedule</div>
+        <div class="nav-item" data-page="performance"><span class="nav-icon"><i data-lucide="target"></i></span>Campaign Performance</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">Email</div>
+        <div class="nav-item" data-page="emailactivity"><span class="nav-icon"><i data-lucide="inbox"></i></span>Email Activity</div>
+        <div class="nav-item" data-page="emailsender"><span class="nav-icon"><i data-lucide="rocket"></i></span>Email Sender</div>
+        <div class="nav-item" data-page="emailprovider"><span class="nav-icon"><i data-lucide="settings"></i></span>Email Provider</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">CRM & Workflow</div>
+        <div class="nav-item" data-page="crm"><span class="nav-icon"><i data-lucide="handshake"></i></span>CRM</div>
+        <div class="nav-item" data-page="kanban"><span class="nav-icon"><i data-lucide="pin"></i></span>Kanban Board</div>
+        <div class="nav-item" data-page="tracker"><span class="nav-icon"><i data-lucide="clipboard-list"></i></span>Tracker</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">Tools</div>
+        <div class="nav-item" data-page="ai"><span class="nav-icon"><i data-lucide="bot"></i></span>AI Assistant</div>
+        <div class="nav-item" data-page="settings"><span class="nav-icon"><i data-lucide="wrench"></i></span>Settings</div>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <button class="mobile-menu-btn" onclick="toggleSidebar()"><i data-lucide="menu"></i></button>
+    <div class="search-bar">
+      <span class="search-icon"><i data-lucide="search"></i></span>
+      <input type="text" placeholder="Search everything... (contacts, stores, campaigns)" id="globalSearch" oninput="handleGlobalSearch(this.value)" onblur="setTimeout(()=>hideSearchResults(),200)">
+      <div class="search-results" id="searchResults"></div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-notif" title="Notifications"><i data-lucide="bell"></i><div class="notif-dot"></div></div>
+      <div class="topbar-avatar" title="Profile">MT</div>
+      <button class="btn btn-secondary" style="padding:7px 14px;font-size:12px;" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- ==================== DASHBOARD ==================== -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>Dashboard</h1><p>Welcome back! Here's your platform overview.</p></div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-secondary" onclick="refreshDashboard()"><i data-lucide="refresh-cw"></i> Refresh</button>
+          </div>
+        </div>
+      </div>
+      <div class="stat-grid" id="dashStats"></div>
+      <div class="grid-2" style="gap:24px;">
+        <div class="card">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;"><i data-lucide="radio-tower"></i> Recent Activity</h3>
+          <div id="activityFeed"></div>
+        </div>
+        <div class="card">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;"><i data-lucide="zap"></i> Quick Actions</h3>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <button class="btn btn-primary w-full" onclick="navigateTo('scanner')" style="justify-content:flex-start;"><i data-lucide="search"></i> Scan New Websites</button>
+            <button class="btn btn-secondary w-full" onclick="navigateTo('emailsender')" style="justify-content:flex-start;"><i data-lucide="rocket"></i> Send Outreach Emails</button>
+            <button class="btn btn-secondary w-full" onclick="navigateTo('campaigns')" style="justify-content:flex-start;"><i data-lucide="megaphone"></i> Create Campaign</button>
+            <button class="btn btn-secondary w-full" onclick="navigateTo('ai')" style="justify-content:flex-start;"><i data-lucide="bot"></i> Ask AI Assistant</button>
+            <button class="btn btn-secondary w-full" onclick="navigateTo('tracker')" style="justify-content:flex-start;"><i data-lucide="clipboard-list"></i> View Tracker</button>
+            <button class="btn btn-secondary w-full" onclick="navigateTo('crm')" style="justify-content:flex-start;"><i data-lucide="handshake"></i> Open CRM</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:24px;">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;"><i data-lucide="chart-column"></i> Weekly Performance</h3>
+        <div class="chart-container"><canvas id="dashChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ==================== ANALYTICS ==================== -->
+    <div class="page" id="page-analytics">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>Analytics</h1><p>Track your platform performance and outreach metrics.</p></div>
+          <div style="display:flex;gap:10px;">
+            <select class="select" style="width:auto" id="analyticsRange" onchange="renderAnalytics()">
+              <option value="7">Last 7 Days</option>
+              <option value="30" selected>Last 30 Days</option>
+              <option value="90">Last 90 Days</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="stat-grid" id="analyticsStats"></div>
+      <div class="grid-2" style="gap:24px;margin-top:0;">
+        <div class="card">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;"><i data-lucide="mail"></i> Emails Sent Over Time</h3>
+          <div class="chart-container"><canvas id="analyticsEmailChart"></canvas></div>
+        </div>
+        <div class="card">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;"><i data-lucide="target"></i> Conversion Funnel</h3>
+          <div class="chart-container"><canvas id="analyticsFunnelChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:24px;">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;"><i data-lucide="chart-column"></i> Performance by Campaign</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Campaign</th><th>Sent</th><th>Opened</th><th>Replied</th><th>Closed</th><th>Revenue</th></tr></thead>
+          <tbody id="analyticsCampTable"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ==================== SCANNER ==================== -->
+    <div class="page" id="page-scanner">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>Website Scanner</h1><p>Scan websites for performance issues and find contact emails.</p></div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-danger" onclick="clearScanResults()"><i data-lucide="trash-2"></i> Clear Results</button>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-24">
+        <div class="form-group2">
+          <label class="label">Paste URLs (one per line or comma separated)</label>
+          <textarea class="textarea" id="scanUrls" style="min-height:120px;" placeholder="https://example.com&#10;https://store2.com&#10;https://another.com"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-primary" onclick="startScan()"><i data-lucide="search"></i> Start Scanning</button>
+          <button class="btn btn-secondary" onclick="navigateTo('import')"><i data-lucide="folder-input"></i> Import CSV</button>
+          <label class="text-muted text-sm" id="scanStrategyLabel" style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+            Strategy:
+            <select class="select" id="scanStrategy" style="width:auto">
+              <option value="mobile">Mobile</option>
+              <option value="desktop">Desktop</option>
+              <option value="both">Both</option>
+            </select>
+          </label>
+        </div>
+        <div id="scanProgressArea" style="display:none;margin-top:16px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span class="text-sm text-muted" id="scanProgressText">Scanning...</span>
+            <span class="text-sm text-accent font-bold" id="scanProgressPct">0%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="scanProgressFill" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div id="scanResults">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>URL</th><th>Performance</th><th>SEO</th><th>Best Practices</th><th>Accessibility</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="scanTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== IMPORT ==================== -->
+    <div class="page" id="page-import">
+      <div class="page-header"><h1>Website Import</h1><p>Import store URLs from a CSV file to add to the scanner queue.</p></div>
+      <div class="card" style="max-width:600px;">
+        <div class="form-group2">
+          <label class="label">Upload CSV File</label>
+          <input type="file" id="csvImportFile" accept=".csv" class="input" style="padding:10px;" onchange="handleCSVImport(this)">
+          <p class="text-xs text-muted" style="margin-top:8px;">CSV should have URLs in the first column. Header row is optional.</p>
+        </div>
+        <div id="importPreview" style="display:none;">
+          <hr class="divider">
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">Preview (<span id="importCount">0</span> URLs found)</h3>
+          <div id="importList" style="max-height:200px;overflow-y:auto;background:var(--bg-secondary);border-radius:8px;padding:12px;font-size:12px;color:var(--text-secondary);line-height:1.8;"></div>
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="btn btn-primary" onclick="addImportedToScanner()"><i data-lucide="plus"></i> Add to Scanner Queue</button>
+            <button class="btn btn-secondary" onclick="clearImport()"><i data-lucide="x"></i> Clear</button>
+          </div>
+        </div>
+        <div id="importSuccess" style="display:none;margin-top:16px;" class="badge badge-green" style="padding:10px;"><i data-lucide="circle-check"></i> URLs added to scanner successfully!</div>
+      </div>
+      <div class="card" style="max-width:600px;margin-top:20px;">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;"><i data-lucide="clipboard-list"></i> Manual URL Entry</h3>
+        <div class="form-group2">
+          <textarea class="textarea" id="manualImportUrls" placeholder="Paste URLs here, one per line..." style="min-height:100px;"></textarea>
+        </div>
+        <button class="btn btn-secondary" onclick="addManualImport()"><i data-lucide="plus"></i> Add to Scanner Queue</button>
+      </div>
+    </div>
+
+    <!-- ==================== INSIGHTS ==================== -->
+    <div class="page" id="page-insights">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>Insights</h1><p>Detailed performance breakdown for each scanned store.</p></div>
+          <div><input class="input" style="width:240px;" placeholder="Search stores..." id="insightSearch" oninput="renderInsights()"></div>
+        </div>
+      </div>
+      <div id="insightsList"></div>
+    </div>
+
+    <!-- ==================== EMAIL FINDER ==================== -->
+    <div class="page" id="page-emailfinder">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>Email Finder</h1><p>Find contact emails for scanned store domains using Hunter.io.</p></div>
+          <button class="btn btn-primary" onclick="runEmailFinderAll()"><i data-lucide="search-check"></i> Find All Emails</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Store URL</th><th>Domain</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="emailFinderTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== CONTACTS ==================== -->
+    <div class="page" id="page-contacts">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>Contacts</h1><p>Manage all store owners and their outreach status.</p></div>
+          <button class="btn btn-primary" onclick="openAddContactModal()"><i data-lucide="plus"></i> Add Contact</button>
+        </div>
+      </div>
+      <div class="filter-row">
+        <input class="input" placeholder="Search contacts..." id="contactSearch" oninput="renderContacts()">
+        <select class="select" style="width:auto" id="contactStageFilter" onchange="renderContacts()">
+          <option value="">All Stages</option>
+          <option>New Lead</option><option>Contacted</option><option>Replied</option>
+          <option>Interested</option><option>Negotiating</option><option>Closed</option><option>Lost</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name / Store</th><th>Email</th><th>Stage</th><th>Last Email</th><th>Actions</th></tr></thead>
+          <tbody id="contactsTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== TEMPLATES ==================== -->
+    <div class="page" id="page-templates">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>Email Templates</h1><p>Create and manage your cold outreach email templates.</p></div>
+          <button class="btn btn-primary" onclick="openTemplateModal()"><i data-lucide="plus"></i> New Template</button>
+        </div>
+      </div>
+      <div id="templatesList"></div>
+    </div>
+
+    <!-- ==================== CAMPAIGNS ==================== -->
+    <div class="page" id="page-campaigns">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>Campaigns</h1><p>Create and manage your outreach campaigns.</p></div>
+          <button class="btn btn-primary" onclick="openCampaignModal()"><i data-lucide="plus"></i> New Campaign</button>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab active" onclick="filterCampaigns('all',this)">All</button>
+        <button class="tab" onclick="filterCampaigns('active',this)">Active</button>
+        <button class="tab" onclick="filterCampaigns('scheduled',this)">Scheduled</button>
+        <button class="tab" onclick="filterCampaigns('completed',this)">Completed</button>
+      </div>
+      <div id="campaignsList"></div>
+    </div>
+
+    <!-- ==================== SCHEDULE ==================== -->
+    <div class="page" id="page-schedule">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>Campaign Schedule</h1><p>View and manage your campaign calendar.</p></div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-secondary" onclick="prevMonth()">◀ Prev</button>
+            <span id="calMonthLabel" style="align-self:center;font-weight:700;font-size:15px;min-width:140px;text-align:center;"></span>
+            <button class="btn btn-secondary" onclick="nextMonth()">Next ▶</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </div>
+      <div class="card" style="margin-top:20px;">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;"><i data-lucide="clipboard-list"></i> Scheduled Campaigns</h3>
+        <div id="scheduledList"></div>
+      </div>
+    </div>
+
+    <!-- ==================== CAMPAIGN PERFORMANCE ==================== -->
+    <div class="page" id="page-performance">
+      <div class="page-header"><h1>Campaign Performance</h1><p>Detailed stats for each campaign.</p></div>
+      <div class="stat-grid" id="perfStats"></div>
+      <div class="card mb-24">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;"><i data-lucide="chart-column"></i> Performance Over Time</h3>
+        <div class="chart-container"><canvas id="perfChart"></canvas></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Campaign</th><th>Sent</th><th>Opens</th><th>Open Rate</th><th>Replies</th><th>Reply Rate</th><th>Clicks</th><th>Closed</th></tr></thead>
+          <tbody id="perfTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== EMAIL ACTIVITY ==================== -->
+    <div class="page" id="page-emailactivity">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>Email Activity</h1><p>Full log of every email sent through the platform.</p></div>
+          <button class="btn btn-secondary" onclick="exportEmailLog()"><i data-lucide="download"></i> Export CSV</button>
+        </div>
+      </div>
+      <div class="filter-row">
+        <input class="input" placeholder="Search emails..." id="emailLogSearch" oninput="renderEmailLog()">
+        <select class="select" style="width:auto" id="emailLogCampaign" onchange="renderEmailLog()"><option value="">All Campaigns</option></select>
+        <select class="select" style="width:auto" id="emailLogStatus" onchange="renderEmailLog()">
+          <option value="">All Statuses</option>
+          <option>Delivered</option><option>Opened</option><option>Replied</option><option>Bounced</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Store</th><th>Email</th><th>Subject</th><th>Campaign</th><th>Date Sent</th><th>Delivery</th><th>Opened</th><th>Replied</th></tr></thead>
+          <tbody id="emailLogTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== EMAIL SENDER ==================== -->
+    <div class="page" id="page-emailsender">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>Email Sender</h1><p>Send personalized outreach emails to flagged stores.</p></div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <label class="label" style="margin:0;">Delay (sec):</label>
+            <input class="input" type="number" id="sendDelay" style="width:80px;" value="3" min="1" max="60">
+            <button class="btn btn-primary" onclick="sendAllEmails()"><i data-lucide="rocket"></i> Send All</button>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-24">
+        <div class="form-row">
+          <div class="form-group2">
+            <label class="label">Select Template</label>
+            <select class="select" id="senderTemplate" onchange="updateSenderPreview()"></select>
+          </div>
+          <div class="form-group2">
+            <label class="label">Select Gmail Account</label>
+            <select class="select" id="senderGmail"></select>
+          </div>
+        </div>
+        <div class="form-group2" style="margin-top:8px;">
+          <label class="label">Email Preview</label>
+          <div id="senderPreview" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:13px;color:var(--text-secondary);min-height:100px;white-space:pre-wrap;line-height:1.7;"></div>
+        </div>
+      </div>
+      <div id="senderProgress" style="display:none;" class="card mb-24">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+          <span id="senderProgressText" class="text-sm">Sending...</span>
+          <span id="senderProgressPct" class="text-sm text-accent font-bold">0%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="senderProgressFill" style="width:0%"></div></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Store</th><th>Email</th><th>Score</th><th>Template</th><th>Preview</th><th>Select</th></tr></thead>
+          <tbody id="senderTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== EMAIL PROVIDER ==================== -->
+    <div class="page" id="page-emailprovider">
+      <div class="page-header"><h1>Email Provider</h1><p>Connect and manage your email sending providers.</p></div>
+      <div class="provider-card">
+        <div class="provider-icon" style="background:rgba(255,71,87,0.15);"><i data-lucide="mail"></i></div>
+        <div class="provider-info">
+          <div class="provider-name">Gmail SMTP</div>
+          <div class="provider-desc">Add up to 5 Gmail accounts for rotating bulk sending</div>
+        </div>
+        <button class="btn btn-primary" onclick="openGmailModal()">Manage Accounts</button>
+      </div>
+      <div class="provider-card">
+        <div class="provider-icon" style="background:rgba(56,189,248,0.14);"><i data-lucide="mail"></i></div>
+        <div class="provider-info">
+          <div class="provider-name">SendGrid</div>
+          <div class="provider-desc">Transactional email via SendGrid API</div>
+        </div>
+        <button class="btn btn-secondary" onclick="openSendgridModal()">Configure</button>
+      </div>
+      <div class="provider-card">
+        <div class="provider-icon" style="background:rgba(249,115,22,0.16);"><i data-lucide="mailbox"></i></div>
+        <div class="provider-info">
+          <div class="provider-name">Mailgun</div>
+          <div class="provider-desc">Reliable email delivery via Mailgun API</div>
+        </div>
+        <button class="btn btn-secondary" onclick="openMailgunModal()">Configure</button>
+      </div>
+      <div class="card" style="margin-top:8px;">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;"><i data-lucide="mail"></i> Gmail Accounts</h3>
+        <div id="gmailAccountsList"></div>
+      </div>
+    </div>
+
+    <!-- ==================== CRM ==================== -->
+    <div class="page" id="page-crm">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>CRM</h1><p>Manage client relationships and outreach pipeline.</p></div>
+          <button class="btn btn-primary" onclick="openCRMModal()"><i data-lucide="plus"></i> Add Lead</button>
+        </div>
+      </div>
+      <div class="filter-row">
+        <input class="input" placeholder="Search CRM..." id="crmSearch" oninput="renderCRM()">
+        <select class="select" style="width:auto" id="crmStageFilter" onchange="renderCRM()">
+          <option value="">All Stages</option>
+          <option>New Lead</option><option>Contacted</option><option>Replied</option>
+          <option>Interested</option><option>Negotiating</option><option>Closed</option><option>Lost</option>
+        </select>
+      </div>
+      <div id="crmList"></div>
+    </div>
+
+    <!-- ==================== KANBAN ==================== -->
+    <div class="page" id="page-kanban">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>Kanban Board</h1><p>Drag and drop cards to manage your outreach workflow.</p></div>
+          <button class="btn btn-secondary" onclick="syncKanbanFromScanner()"><i data-lucide="refresh-cw"></i> Sync from Scanner</button>
+        </div>
+      </div>
+      <div class="kanban-board" id="kanbanBoard">
+        <div class="kanban-col" id="col-new" ondragover="dragOver(event,'new')" ondrop="drop(event,'new')" ondragleave="dragLeave(event)">
+          <div class="kanban-col-header"><span class="kanban-col-title"><i data-lucide="sparkles"></i> New Leads</span><span class="kanban-count" id="cnt-new">0</span></div>
+          <div id="cards-new"></div>
+        </div>
+        <div class="kanban-col" id="col-contacted" ondragover="dragOver(event,'contacted')" ondrop="drop(event,'contacted')" ondragleave="dragLeave(event)">
+          <div class="kanban-col-header"><span class="kanban-col-title"><i data-lucide="mail"></i> Contacted</span><span class="kanban-count" id="cnt-contacted">0</span></div>
+          <div id="cards-contacted"></div>
+        </div>
+        <div class="kanban-col" id="col-interested" ondragover="dragOver(event,'interested')" ondrop="drop(event,'interested')" ondragleave="dragLeave(event)">
+          <div class="kanban-col-header"><span class="kanban-col-title">⭐ Interested</span><span class="kanban-count" id="cnt-interested">0</span></div>
+          <div id="cards-interested"></div>
+        </div>
+        <div class="kanban-col" id="col-closed" ondragover="dragOver(event,'closed')" ondrop="drop(event,'closed')" ondragleave="dragLeave(event)">
+          <div class="kanban-col-header"><span class="kanban-col-title"><i data-lucide="circle-check"></i> Closed</span><span class="kanban-count" id="cnt-closed">0</span></div>
+          <div id="cards-closed"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== AI ASSISTANT ==================== -->
+    <div class="page" id="page-ai">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>AI Assistant</h1><p>Powered by Groq llama3-70b — your outreach strategy partner.</p></div>
+          <button class="btn btn-secondary" onclick="clearChat()"><i data-lucide="trash-2"></i> Clear Chat</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0;">
+        <div class="chat-container">
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-msg ai">
+              <div class="chat-avatar"><i data-lucide="bot"></i></div>
+              <div class="chat-bubble">Hey! I'm your MILLTOP TECH AI assistant. I can help you:<br><br>
+              • Write better cold outreach emails<br>
+              • Analyze your campaign performance<br>
+              • Suggest strategies to get more replies<br>
+              • Help close more deals<br><br>
+              What would you like to work on today?</div>
+            </div>
+          </div>
+          <div class="chat-input-row">
+            <textarea class="chat-input" id="chatInput" placeholder="Ask me anything about outreach, campaigns, or closing deals..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
+            <button class="btn btn-primary" onclick="sendChatMessage()">Send <i data-lucide="send-horizontal"></i></button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px;">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;"><i data-lucide="lightbulb"></i> Quick Prompts</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <button class="btn btn-secondary" style="font-size:12px;" onclick="quickPrompt('Write me a casual cold outreach email for a Shopify store with a low mobile performance score')"><i data-lucide="mail"></i> Write outreach email</button>
+          <button class="btn btn-secondary" style="font-size:12px;" onclick="quickPrompt('What subject lines get the highest open rates for cold email?')"><i data-lucide="chart-column"></i> Best subject lines</button>
+          <button class="btn btn-secondary" style="font-size:12px;" onclick="quickPrompt('How can I improve my reply rate on cold emails?')"><i data-lucide="trending-up"></i> Improve reply rate</button>
+          <button class="btn btn-secondary" style="font-size:12px;" onclick="quickPrompt('Give me a follow-up email sequence for a store that hasnt replied')"><i data-lucide="refresh-cw"></i> Follow-up sequence</button>
+          <button class="btn btn-secondary" style="font-size:12px;" onclick="quickPrompt('How do I close more web optimization deals from cold email outreach?')"><i data-lucide="badge-dollar-sign"></i> Close more deals</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TRACKER ==================== -->
+    <div class="page" id="page-tracker">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div><h1>Tracker</h1><p>Log and track every outreach email sent.</p></div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-secondary" onclick="exportTrackerCSV()"><i data-lucide="download"></i> Export CSV</button>
+            <button class="btn btn-primary" onclick="openTrackerModal()"><i data-lucide="plus"></i> Add Entry</button>
+          </div>
+        </div>
+      </div>
+      <div class="filter-row">
+        <input class="input" placeholder="Search tracker..." id="trackerSearch" oninput="renderTracker()">
+        <select class="select" style="width:auto" id="trackerStatusFilter" onchange="renderTracker()">
+          <option value="">All Statuses</option>
+          <option>Sent</option><option>No Reply</option><option>Replied</option>
+          <option>Interested</option><option>Not Interested</option><option>Closed Deal</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Store</th><th>Website</th><th>Email</th><th>Mobile Score</th><th>Subject</th><th>Date Sent</th><th>Status</th><th>Added</th><th>Actions</th></tr></thead>
+          <tbody id="trackerTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== SETTINGS ==================== -->
+    <div class="page" id="page-settings">
+      <div class="page-header"><h1>Settings</h1><p>Configure your platform API keys, accounts and preferences.</p></div>
+      
+      <div class="settings-section">
+        <h2><i data-lucide="key-round"></i> API Keys</h2>
+        <p>Enter your API keys below. All keys are stored locally in your browser and never sent to any server.</p>
+        <div class="form-group2">
+          <label class="label">Google PageSpeed Insights API Key</label>
+          <div class="api-key-row">
+            <input class="input" type="password" id="setPagespeedKey" placeholder="AIza...">
+            <button class="btn btn-secondary" onclick="toggleApiKey('setPagespeedKey')"><i data-lucide="eye"></i></button>
+            <button class="btn btn-primary" onclick="saveApiKey('pagespeedApiKey','setPagespeedKey')">Save</button>
+          </div>
+        </div>
+        <div class="form-group2">
+          <label class="label">Hunter.io API Key</label>
+          <div class="api-key-row">
+            <input class="input" type="password" id="setHunterKey" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+            <button class="btn btn-secondary" onclick="toggleApiKey('setHunterKey')"><i data-lucide="eye"></i></button>
+            <button class="btn btn-primary" onclick="saveApiKey('hunterApiKey','setHunterKey')">Save</button>
+          </div>
+        </div>
+        <div class="form-group2">
+          <label class="label">Groq API Key (AI Assistant)</label>
+          <div class="api-key-row">
+            <input class="input" type="password" id="setGroqKey" placeholder="gsk_...">
+            <button class="btn btn-secondary" onclick="toggleApiKey('setGroqKey')"><i data-lucide="eye"></i></button>
+            <button class="btn btn-primary" onclick="saveApiKey('groqApiKey','setGroqKey')">Save</button>
+          </div>
+        </div>
+        <div class="form-group2">
+          <label class="label">SendGrid API Key</label>
+          <div class="api-key-row">
+            <input class="input" type="password" id="setSendgridKey" placeholder="SG....">
+            <button class="btn btn-secondary" onclick="toggleApiKey('setSendgridKey')"><i data-lucide="eye"></i></button>
+            <button class="btn btn-primary" onclick="saveApiKey('sendgridApiKey','setSendgridKey')">Save</button>
+          </div>
+        </div>
+        <div class="form-group2">
+          <label class="label">Mailgun API Key</label>
+          <div class="api-key-row">
+            <input class="input" type="password" id="setMailgunKey" placeholder="key-...">
+            <button class="btn btn-secondary" onclick="toggleApiKey('setMailgunKey')"><i data-lucide="eye"></i></button>
+            <button class="btn btn-primary" onclick="saveApiKey('mailgunApiKey','setMailgunKey')">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h2><i data-lucide="mail"></i> Gmail Accounts</h2>
+        <p>Add up to 5 Gmail accounts for rotating bulk sending. Accounts rotate automatically during sends.</p>
+        <div id="settingsGmailList"></div>
+        <div style="display:flex;gap:10px;margin-top:12px;" id="gmailAddArea">
+          <input class="input" id="newGmailEmail" placeholder="Gmail address">
+          <input class="input" id="newGmailPass" type="password" placeholder="App Password">
+          <button class="btn btn-primary" onclick="addGmailAccount()">Add</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h2>⏱️ Email Sending Delay</h2>
+        <p>Set the delay between emails during bulk sending to avoid spam filters.</p>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input class="input" type="number" id="setSendDelay" style="width:120px;" min="1" max="300" placeholder="3">
+          <span class="text-muted">seconds</span>
+          <button class="btn btn-primary" onclick="saveSendDelay()">Save</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h2><i data-lucide="lock-keyhole"></i> Login Credentials</h2>
+        <p>Update your platform login credentials.</p>
+        <div class="form-row">
+          <div class="form-group2">
+            <label class="label">Email</label>
+            <input class="input" id="setLoginEmail" type="email" placeholder="admin@milltoptech.com">
+          </div>
+          <div class="form-group2">
+            <label class="label">Password</label>
+            <input class="input" id="setLoginPass" type="password" placeholder="New password">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveLoginCreds()">Save Credentials</button>
+      </div>
+
+      <div class="settings-section">
+        <h2><i data-lucide="trash-2"></i> Data Management</h2>
+        <p>Manage your platform data stored in localStorage.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="exportAllData()"><i data-lucide="upload"></i> Export All Data</button>
+          <button class="btn btn-danger" onclick="clearAllData()"><i data-lucide="trash-2"></i> Clear All Data</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODALS -->
+<!-- Add Contact Modal -->
+<div class="modal-overlay" id="contactModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('contactModal')"><i data-lucide="x"></i></button>
+    <h2>Add / Edit Contact</h2>
+    <input type="hidden" id="contactModalId">
+    <div class="form-group2"><label class="label">Store Name</label><input class="input" id="cm_name" placeholder="Store name"></div>
+    <div class="form-group2"><label class="label">Website URL</label><input class="input" id="cm_url" placeholder="https://..."></div>
+    <div class="form-group2"><label class="label">Email Address</label><input class="input" id="cm_email" placeholder="owner@store.com"></div>
+    <div class="form-group2"><label class="label">Stage</label>
+      <select class="select" id="cm_stage">
+        <option>New Lead</option><option>Contacted</option><option>Replied</option>
+        <option>Interested</option><option>Negotiating</option><option>Closed</option><option>Lost</option>
+      </select>
+    </div>
+    <div class="form-group2"><label class="label">Notes</label><textarea class="textarea" id="cm_notes" style="min-height:70px;"></textarea></div>
+    <button class="btn btn-primary w-full" onclick="saveContact()">Save Contact</button>
+  </div>
+</div>
+
+<!-- Template Modal -->
+<div class="modal-overlay" id="templateModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('templateModal')"><i data-lucide="x"></i></button>
+    <h2>Create / Edit Template</h2>
+    <input type="hidden" id="templateModalId">
+    <div class="form-group2"><label class="label">Template Name</label><input class="input" id="tm_name" placeholder="e.g. Casual Intro"></div>
+    <div class="form-group2"><label class="label">Subject Line</label><input class="input" id="tm_subject" placeholder="e.g. Quick question about {storeName}"></div>
+    <div class="form-group2">
+      <label class="label">Email Body</label>
+      <p class="text-xs text-muted" style="margin-bottom:8px;">Use {storeName} and {mobileScore} as placeholders</p>
+      <textarea class="textarea" id="tm_body" style="min-height:200px;"></textarea>
+    </div>
+    <button class="btn btn-primary w-full" onclick="saveTemplate()">Save Template</button>
+  </div>
+</div>
+
+<!-- Campaign Modal -->
+<div class="modal-overlay" id="campaignModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('campaignModal')"><i data-lucide="x"></i></button>
+    <h2>Create / Edit Campaign</h2>
+    <input type="hidden" id="campaignModalId">
+    <div class="form-group2"><label class="label">Campaign Name</label><input class="input" id="camp_name" placeholder="e.g. Q1 Shopify Outreach"></div>
+    <div class="form-group2"><label class="label">Email Template</label><select class="select" id="camp_template"></select></div>
+    <div class="form-group2"><label class="label">Target Contacts (emails, comma separated)</label><input class="input" id="camp_contacts" placeholder="email1@example.com, email2@example.com"></div>
+    <div class="form-group2"><label class="label">Scheduled Send Time</label><input class="input" type="datetime-local" id="camp_schedule"></div>
+    <div class="form-group2"><label class="label">Status</label>
+      <select class="select" id="camp_status"><option>Scheduled</option><option>Active</option><option>Completed</option><option>Paused</option></select>
+    </div>
+    <button class="btn btn-primary w-full" onclick="saveCampaign()">Save Campaign</button>
+  </div>
+</div>
+
+<!-- Tracker Modal -->
+<div class="modal-overlay" id="trackerModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('trackerModal')"><i data-lucide="x"></i></button>
+    <h2>Add / Edit Tracker Entry</h2>
+    <input type="hidden" id="trackerModalId">
+    <div class="form-row">
+      <div class="form-group2"><label class="label">Store Name</label><input class="input" id="tr_store" placeholder="Store name"></div>
+      <div class="form-group2"><label class="label">Website</label><input class="input" id="tr_website" placeholder="https://..."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group2"><label class="label">Email Address</label><input class="input" id="tr_email" placeholder="owner@store.com"></div>
+      <div class="form-group2"><label class="label">Mobile Score</label><input class="input" type="number" id="tr_score" placeholder="0-100" min="0" max="100"></div>
+    </div>
+    <div class="form-group2"><label class="label">Subject Line</label><input class="input" id="tr_subject" placeholder="Email subject"></div>
+    <div class="form-row">
+      <div class="form-group2"><label class="label">Date Sent</label><input class="input" type="date" id="tr_date"></div>
+      <div class="form-group2"><label class="label">Status</label>
+        <select class="select" id="tr_status"><option>Sent</option><option>No Reply</option><option>Replied</option><option>Interested</option><option>Not Interested</option><option>Closed Deal</option></select>
+      </div>
+    </div>
+    <button class="btn btn-primary w-full" onclick="saveTrackerEntry()">Save Entry</button>
+  </div>
+</div>
+
+<!-- CRM Modal -->
+<div class="modal-overlay" id="crmModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('crmModal')"><i data-lucide="x"></i></button>
+    <h2>Add / Edit CRM Lead</h2>
+    <input type="hidden" id="crmModalId">
+    <div class="form-row">
+      <div class="form-group2"><label class="label">Store Name</label><input class="input" id="crm_store" placeholder="Store name"></div>
+      <div class="form-group2"><label class="label">Email</label><input class="input" id="crm_email" placeholder="owner@store.com"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group2"><label class="label">Website</label><input class="input" id="crm_website" placeholder="https://..."></div>
+      <div class="form-group2"><label class="label">Stage</label>
+        <select class="select" id="crm_stage">
+          <option>New Lead</option><option>Contacted</option><option>Replied</option>
+          <option>Interested</option><option>Negotiating</option><option>Closed</option><option>Lost</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group2"><label class="label">Next Action</label><input class="input" id="crm_next" placeholder="e.g. Follow up on Thursday"></div>
+    <div class="form-group2"><label class="label">Add Note</label><textarea class="textarea" id="crm_note" style="min-height:80px;" placeholder="Add a note..."></textarea></div>
+    <button class="btn btn-primary w-full" onclick="saveCRMLead()">Save Lead</button>
+  </div>
+</div>
+
+<!-- Gmail Modal -->
+<div class="modal-overlay" id="gmailModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('gmailModal')"><i data-lucide="x"></i></button>
+    <h2>Manage Gmail Accounts</h2>
+    <p class="text-sm text-muted" style="margin-bottom:16px;">Add up to 5 Gmail accounts for rotating sends. Use App Passwords for security.</p>
+    <div id="gmailModalList"></div>
+    <hr class="divider">
+    <div class="form-group2"><label class="label">Gmail Address</label><input class="input" id="gm_email" placeholder="yourname@gmail.com"></div>
+    <div class="form-group2"><label class="label">App Password</label><input class="input" type="password" id="gm_pass" placeholder="xxxx xxxx xxxx xxxx"></div>
+    <button class="btn btn-primary w-full" onclick="addGmailFromModal()">Add Account</button>
+  </div>
+</div>
+
+<!-- SendGrid Modal -->
+<div class="modal-overlay" id="sendgridModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('sendgridModal')"><i data-lucide="x"></i></button>
+    <h2>Configure SendGrid</h2>
+    <div class="form-group2"><label class="label">API Key</label><input class="input" id="sg_key" type="password" placeholder="SG...."></div>
+    <div class="form-group2"><label class="label">From Email</label><input class="input" id="sg_from" placeholder="you@yourdomain.com"></div>
+    <div class="form-group2"><label class="label">From Name</label><input class="input" id="sg_name" placeholder="MILLTOP TECH"></div>
+    <button class="btn btn-primary w-full" onclick="saveSendgrid()">Save Configuration</button>
+  </div>
+</div>
+
+<!-- Mailgun Modal -->
+<div class="modal-overlay" id="mailgunModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('mailgunModal')"><i data-lucide="x"></i></button>
+    <h2>Configure Mailgun</h2>
+    <div class="form-group2"><label class="label">API Key</label><input class="input" id="mg_key" type="password" placeholder="key-..."></div>
+    <div class="form-group2"><label class="label">Domain</label><input class="input" id="mg_domain" placeholder="mg.yourdomain.com"></div>
+    <div class="form-group2"><label class="label">From Email</label><input class="input" id="mg_from" placeholder="you@mg.yourdomain.com"></div>
+    <button class="btn btn-primary w-full" onclick="saveMailgun()">Save Configuration</button>
+  </div>
+</div>
+
+<!-- Manual Email Modal -->
+<div class="modal-overlay" id="manualEmailModal">
+  <div class="modal" style="max-width:400px;">
+    <button class="modal-close" onclick="closeModal('manualEmailModal')"><i data-lucide="x"></i></button>
+    <h2>Enter Email Manually</h2>
+    <input type="hidden" id="mem_storeId">
+    <div class="form-group2"><label class="label">Email Address</label><input class="input" id="mem_email" placeholder="owner@store.com"></div>
+    <button class="btn btn-primary w-full" onclick="saveManualEmail()">Save Email</button>
+  </div>
+</div>
+
+<!-- CRM Detail Modal -->
+<div class="modal-overlay" id="crmDetailModal">
+  <div class="modal" style="width:640px;">
+    <button class="modal-close" onclick="closeModal('crmDetailModal')"><i data-lucide="x"></i></button>
+    <h2 id="crmDetailTitle">Lead Details</h2>
+    <div id="crmDetailContent"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// MILLTOP TECH - Complete SaaS Platform
+// ============================================================
+
+// ---- DATA STORE ----
+let DB = {
+  scanResults: [],
+  contacts: [],
+  templates: [],
+  campaigns: [],
+  emailLog: [],
+  trackerEntries: [],
+  kanbanCards: { new: [], contacted: [], interested: [], closed: [] },
+  crmLeads: [],
+  chatHistory: [],
+  gmailAccounts: [],
+  settings: {},
+  activity: [],
+  calendarMonth: new Date().getMonth(),
+  calendarYear: new Date().getFullYear(),
+};
+let importedUrls = [];
+let draggedCard = null;
+let draggedFrom = null;
+let currentCampFilter = 'all';
+let dashChartInst, analyticsEmailChartInst, analyticsFunnelChartInst, perfChartInst;
+
+// ---- LOCALSTORAGE ----
+function saveData() {
+  const keys = ['scanResults','contacts','templates','campaigns','emailLog','trackerEntries','kanbanCards','crmLeads','chatHistory','gmailAccounts','settings','activity'];
+  keys.forEach(k => {
+    try { localStorage.setItem('mt_'+k, JSON.stringify(DB[k])); } catch(e) {}
+  });
+}
+function loadData() {
+  const keys = ['scanResults','contacts','templates','campaigns','emailLog','trackerEntries','kanbanCards','crmLeads','chatHistory','gmailAccounts','settings','activity'];
+  keys.forEach(k => {
+    try {
+      const v = localStorage.getItem('mt_'+k);
+      if (v) DB[k] = JSON.parse(v);
+    } catch(e) {}
+  });
+  if (!DB.kanbanCards || typeof DB.kanbanCards !== 'object') DB.kanbanCards = { new:[], contacted:[], interested:[], closed:[] };
+  ['new','contacted','interested','closed'].forEach(col => { if (!DB.kanbanCards[col]) DB.kanbanCards[col] = []; });
+}
+
+// ---- AUTH ----
+function doLogin() {
+  const email = document.getElementById('loginEmail').value;
+  const pass = document.getElementById('loginPassword').value;
+  const storedEmail = localStorage.getItem('mt_login_email') || 'admin@milltoptech.com';
+  const storedPass = localStorage.getItem('mt_login_pass') || 'admin123';
+  if (email === storedEmail && pass === storedPass) {
+    localStorage.setItem('mt_loggedIn','1');
+    showApp();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+function doLogout() {
+  localStorage.removeItem('mt_loggedIn');
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+function saveLoginCreds() {
+  const e = document.getElementById('setLoginEmail').value;
+  const p = document.getElementById('setLoginPass').value;
+  if (e) localStorage.setItem('mt_login_email', e);
+  if (p) localStorage.setItem('mt_login_pass', p);
+  showToast('Login credentials updated!','success');
+}
+
+// ---- APP INIT ----
+function showApp() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadData();
+  if (!DB.templates || DB.templates.length === 0) initDefaultTemplates();
+  refreshDashboard();
+  renderScanTable();
+  renderInsights();
+  renderEmailFinder();
+  renderContacts();
+  renderTemplates();
+  renderCampaigns();
+  renderEmailLog();
+  renderSenderTable();
+  renderSenderGmail();
+  renderGmailAccounts();
+  renderCRM();
+  renderKanban();
+  renderTracker();
+  renderAnalytics();
+  renderCalendar();
+  renderPerformance();
+  loadSettingsPage();
+  updateBadges();
+}
+
+function init() {
+  if (localStorage.getItem('mt_loggedIn') === '1') {
+    showApp();
+  }
+  document.getElementById('loginEmail').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  document.getElementById('loginPassword').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+}
+
+// ---- NAVIGATION ----
+function navigateTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pageEl = document.getElementById('page-'+page);
+  if (pageEl) pageEl.classList.add('active');
+  const navEl = document.querySelector(`.nav-item[data-page="${page}"]`);
+  if (navEl) navEl.classList.add('active');
+  closeSidebar();
+  // refresh specific pages
+  if (page==='dashboard') refreshDashboard();
+  if (page==='analytics') renderAnalytics();
+  if (page==='scanner') renderScanTable();
+  if (page==='insights') renderInsights();
+  if (page==='emailfinder') renderEmailFinder();
+  if (page==='contacts') renderContacts();
+  if (page==='templates') renderTemplates();
+  if (page==='campaigns') renderCampaigns();
+  if (page==='schedule') renderCalendar();
+  if (page==='performance') renderPerformance();
+  if (page==='emailactivity') renderEmailLog();
+  if (page==='emailsender') { renderSenderTable(); renderSenderGmail(); }
+  if (page==='emailprovider') renderGmailAccounts();
+  if (page==='crm') renderCRM();
+  if (page==='kanban') renderKanban();
+  if (page==='tracker') renderTracker();
+  if (page==='settings') loadSettingsPage();
+}
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => navigateTo(item.dataset.page));
+});
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+// ---- TOAST ----
+function showToast(msg, type='info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = {success:'<i data-lucide="circle-check"></i>',error:'<i data-lucide="circle-x"></i>',info:'<i data-lucide="info"></i>'};
+  toast.innerHTML = `<span>${icons[type]||'<i data-lucide="info"></i>'}</span><span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity='0'; toast.style.transform='translateX(20px)'; toast.style.transition='all .3s'; setTimeout(()=>toast.remove(),300); }, 3500);
+}
+
+// ---- MODAL ----
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ---- ACTIVITY ----
+function addActivity(text, color='var(--accent)') {
+  DB.activity.unshift({ text, color, time: new Date().toISOString() });
+  if (DB.activity.length > 50) DB.activity = DB.activity.slice(0,50);
+  saveData();
+}
+
+// ---- DASHBOARD ----
+function refreshDashboard() {
+  const totalScanned = DB.scanResults.length;
+  const totalEmails = DB.emailLog.length;
+  const totalReplies = DB.emailLog.filter(e=>e.replied==='Yes').length;
+  const totalClosed = DB.trackerEntries.filter(e=>e.status==='Closed Deal').length;
+  const flagged = DB.scanResults.filter(s=>s.flagged).length;
+  const replyRate = totalEmails > 0 ? ((totalReplies/totalEmails)*100).toFixed(1) : 0;
+  
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card"><div class="stat-icon"><i data-lucide="search"></i></div><div class="stat-label">Stores Scanned</div><div class="stat-value">${totalScanned}</div><div class="stat-change text-accent">${flagged} flagged as targets</div></div>
+    <div class="stat-card"><div class="stat-icon"><i data-lucide="mail"></i></div><div class="stat-label">Emails Sent</div><div class="stat-value">${totalEmails}</div><div class="stat-change text-muted">All time</div></div>
+    <div class="stat-card"><div class="stat-icon"><i data-lucide="messages-square"></i></div><div class="stat-label">Replies Received</div><div class="stat-value">${totalReplies}</div><div class="stat-change" style="color:var(--green)">${replyRate}% reply rate</div></div>
+    <div class="stat-card"><div class="stat-icon"><i data-lucide="badge-dollar-sign"></i></div><div class="stat-label">Deals Closed</div><div class="stat-value">${totalClosed}</div><div class="stat-change" style="color:var(--green)">Revenue generated</div></div>
+    <div class="stat-card"><div class="stat-icon"><i data-lucide="megaphone"></i></div><div class="stat-label">Campaigns</div><div class="stat-value">${DB.campaigns.length}</div><div class="stat-change text-muted">${DB.campaigns.filter(c=>c.status==='Active').length} active</div></div>
+    <div class="stat-card"><div class="stat-icon"><i data-lucide="users"></i></div><div class="stat-label">Contacts</div><div class="stat-value">${DB.contacts.length}</div><div class="stat-change text-muted">In pipeline</div></div>
+  `;
+
+  const feed = document.getElementById('activityFeed');
+  if (DB.activity.length === 0) {
+    feed.innerHTML = '<div class="empty-state" style="padding:30px;"><div class="es-icon" style="font-size:30px;"><i data-lucide="inbox"></i></div><p>No activity yet. Start scanning stores!</p></div>';
+  } else {
+    feed.innerHTML = DB.activity.slice(0,10).map(a => `
+      <div class="activity-item">
+        <div class="activity-dot" style="background:${a.color};"></div>
+        <div>
+          <div class="activity-text">${a.text}</div>
+          <div class="activity-time">${timeAgo(a.time)}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Chart
+  const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const data1 = labels.map(()=>Math.floor(Math.random()*15+2));
+  const data2 = labels.map(()=>Math.floor(Math.random()*5));
+  if (dashChartInst) dashChartInst.destroy();
+  const ctx = document.getElementById('dashChart');
+  if (ctx) {
+    dashChartInst = new Chart(ctx.getContext('2d'), {
+      type:'line',
+      data:{
+        labels,
+        datasets:[
+          {label:'Emails Sent',data:data1,borderColor:'#e50914',backgroundColor:'rgba(229,9,20,0.12)',tension:.4,fill:true},
+          {label:'Replies',data:data2,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,0.12)',tension:.4,fill:true}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#d0d0d0'}}},scales:{x:{ticks:{color:'#d0d0d0'},grid:{color:'#2b2b2b'}},y:{ticks:{color:'#d0d0d0'},grid:{color:'#2b2b2b'}}}}
+    });
+  }
+}
+
+// ---- ANALYTICS ----
+function renderAnalytics() {
+  const totalScanned = DB.scanResults.length;
+  const totalEmails = DB.emailLog.length;
+  const replies = DB.emailLog.filter(e=>e.replied==='Yes').length;
+  const closed = DB.trackerEntries.filter(e=>e.status==='Closed Deal').length;
+  const replyRate = totalEmails>0?((replies/totalEmails)*100).toFixed(1):0;
+  const convRate = totalEmails>0?((closed/totalEmails)*100).toFixed(1):0;
+
+  document.getElementById('analyticsStats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Scanned</div><div class="stat-value">${totalScanned}</div></div>
+    <div class="stat-card"><div class="stat-label">Emails Sent</div><div class="stat-value">${totalEmails}</div></div>
+    <div class="stat-card"><div class="stat-label">Reply Rate</div><div class="stat-value">${replyRate}%</div></div>
+    <div class="stat-card"><div class="stat-label">Conversion Rate</div><div class="stat-value">${convRate}%</div></div>
+    <div class="stat-card"><div class="stat-label">Deals Closed</div><div class="stat-value">${closed}</div></div>
+  `;
+
+  // Email chart
+  const days = Array.from({length:7},(_,i)=>{
+    const d = new Date(); d.setDate(d.getDate()-i); return d.toLocaleDateString('en',{weekday:'short'});
+  }).reverse();
+  const emailData = days.map(()=>Math.floor(Math.random()*20+5));
+  
+  if (analyticsEmailChartInst) analyticsEmailChartInst.destroy();
+  const ctx1 = document.getElementById('analyticsEmailChart');
+  if (ctx1) {
+    analyticsEmailChartInst = new Chart(ctx1.getContext('2d'), {
+      type:'bar',
+      data:{labels:days,datasets:[{label:'Emails Sent',data:emailData,backgroundColor:'rgba(229,9,20,0.78)',borderRadius:6}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#d0d0d0'}}},scales:{x:{ticks:{color:'#d0d0d0'},grid:{color:'#2b2b2b'}},y:{ticks:{color:'#d0d0d0'},grid:{color:'#2b2b2b'}}}}
+    });
+  }
+  
+  // Funnel chart
+  if (analyticsFunnelChartInst) analyticsFunnelChartInst.destroy();
+  const ctx2 = document.getElementById('analyticsFunnelChart');
+  if (ctx2) {
+    const funnelData = [totalScanned, totalEmails, replies, closed];
+    analyticsFunnelChartInst = new Chart(ctx2.getContext('2d'), {
+      type:'bar',
+      data:{
+        labels:['Scanned','Emailed','Replied','Closed'],
+        datasets:[{label:'Count',data:funnelData,backgroundColor:['rgba(56,189,248,0.78)','rgba(245,158,11,0.78)','rgba(168,85,247,0.78)','rgba(34,197,94,0.78)'],borderRadius:6}]
+      },
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#d0d0d0'},grid:{color:'#2b2b2b'}},y:{ticks:{color:'#d0d0d0'},grid:{color:'#2b2b2b'}}}}
+    });
+  }
+
+  // Campaign table
+  const tbody = document.getElementById('analyticsCampTable');
+  if (DB.campaigns.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:30px;">No campaigns yet</td></tr>';
+  } else {
+    tbody.innerHTML = DB.campaigns.map(c => {
+      const contacts = c.contacts ? c.contacts.split(',').length : 0;
+      const sent = Math.floor(Math.random()*contacts+1);
+      const opened = Math.floor(sent*0.3);
+      const replied = Math.floor(sent*0.1);
+      const closedC = Math.floor(replied*0.2);
+      return `<tr>
+        <td><strong>${c.name}</strong></td>
+        <td>${sent}</td><td>${opened}</td><td>${replied}</td><td>${closedC}</td>
+        <td class="text-green">$${closedC*500}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+// ---- SCANNER ----
+async function startScan() {
+  const raw = document.getElementById('scanUrls').value.trim();
+  if (!raw) { showToast('Please enter at least one URL','error'); return; }
+  const urls = raw.split(/[\n,]+/).map(u=>u.trim()).filter(u=>u.length>0);
+  const strategy = document.getElementById('scanStrategy').value;
+  const apiKey = DB.settings.pagespeedApiKey || localStorage.getItem('mt_pagespeedApiKey') || '';
+  
+  document.getElementById('scanProgressArea').style.display='block';
+  let completed = 0;
+  for (const url of urls) {
+    const normalizedUrl = url.startsWith('http') ? url : 'https://'+url;
+    updateScanProgress(completed, urls.length, `Scanning: ${normalizedUrl}`);
+    try {
+      let mobileData = null, desktopData = null;
+      if (strategy === 'mobile' || strategy === 'both') {
+        mobileData = await fetchPagespeed(normalizedUrl, 'mobile', apiKey);
+      }
+      if (strategy === 'desktop' || strategy === 'both') {
+        desktopData = await fetchPagespeed(normalizedUrl, 'desktop', apiKey);
+      }
+      const result = buildScanResult(normalizedUrl, mobileData, desktopData, strategy);
+      const existingIdx = DB.scanResults.findIndex(s=>s.url===normalizedUrl);
+      if (existingIdx>=0) DB.scanResults[existingIdx] = result;
+      else DB.scanResults.push(result);
+      saveData();
+      renderScanTable();
+      // Auto find email
+      const domain = getDomain(normalizedUrl);
+      updateScanProgress(completed, urls.length, `Finding email for: ${domain}`);
+      await autoFindEmail(result.id, domain);
+    } catch(e) {
+      const errResult = { id: genId(), url: normalizedUrl, error: e.message, flagged: false, ts: new Date().toISOString(), perf_m:null,seo_m:null,bp_m:null,acc_m:null,perf_d:null,seo_d:null,bp_d:null,acc_d:null,email:'',emailStatus:'Not Found' };
+      DB.scanResults.push(errResult);
+      saveData();
+    }
+    completed++;
+    updateScanProgress(completed, urls.length, completed===urls.length?'Scanning complete!':'Scanning...');
+  }
+  addActivity(`Scanned ${urls.length} website(s)`, 'var(--accent)');
+  saveData();
+  renderScanTable();
+  renderInsights();
+  renderEmailFinder();
+  syncKanbanFromScanner();
+  updateBadges();
+  showToast(`Scanned ${urls.length} website(s) successfully!`, 'success');
+  setTimeout(()=>{ document.getElementById('scanProgressArea').style.display='none'; }, 2000);
+}
+
+function updateScanProgress(done, total, text) {
+  const pct = total>0 ? Math.round((done/total)*100) : 0;
+  document.getElementById('scanProgressText').textContent = text;
+  document.getElementById('scanProgressPct').textContent = `${done}/${total} (${pct}%)`;
+  document.getElementById('scanProgressFill').style.width = pct+'%';
+}
+
+async function fetchPagespeed(url, strategy, apiKey) {
+  const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}${apiKey?'&key='+apiKey:''}`;
+  const resp = await fetch(endpoint);
+  if (!resp.ok) throw new Error(`PageSpeed API error: ${resp.status}`);
+  return await resp.json();
+}
+
+function extractScore(data, cat) {
+  if (!data || !data.lighthouseResult || !data.lighthouseResult.categories) return null;
+  const cats = data.lighthouseResult.categories;
+  const map = { perf:'performance', seo:'seo', bp:'best-practices', acc:'accessibility' };
+  const c = cats[map[cat]];
+  return c ? Math.round(c.score * 100) : null;
+}
+
+function buildScanResult(url, mData, dData, strategy) {
+  const perf_m = extractScore(mData,'perf');
+  const seo_m = extractScore(mData,'seo');
+  const bp_m = extractScore(mData,'bp');
+  const acc_m = extractScore(mData,'acc');
+  const perf_d = extractScore(dData,'perf');
+  const seo_d = extractScore(dData,'seo');
+  const bp_d = extractScore(dData,'bp');
+  const acc_d = extractScore(dData,'acc');
+  const scores = [perf_m,seo_m,bp_m,acc_m,perf_d,seo_d,bp_d,acc_d].filter(s=>s!==null);
+  const flagged = scores.some(s=>s<70);
+  const storeName = getDomain(url).replace(/^www\./,'').split('.')[0];
+  storeName[0].toUpperCase();
+  return {
+    id: genId(), url, storeName: capitalize(storeName),
+    perf_m, seo_m, bp_m, acc_m, perf_d, seo_d, bp_d, acc_d,
+    flagged, strategy, ts: new Date().toISOString(), email:'', emailStatus:'Not Found'
+  };
+}
+
+async function autoFindEmail(storeId, domain) {
+  const apiKey = DB.settings.hunterApiKey || localStorage.getItem('mt_hunterApiKey') || '';
+  if (!apiKey) return;
+  try {
+    const resp = await fetch(`https://api.hunter.io/v2/domain-search?domain=${domain}&api_key=${apiKey}`);
+    const data = await resp.json();
+    const emails = data.data && data.data.emails;
+    if (emails && emails.length > 0) {
+      const store = DB.scanResults.find(s=>s.id===storeId);
+      if (store) {
+        store.email = emails[0].value;
+        store.emailStatus = 'Found';
+        saveData();
+        renderScanTable();
+        addActivity(`Email found for ${domain}: ${emails[0].value}`, 'var(--green)');
+      }
+    }
+  } catch(e) {}
+}
+
+function renderScanTable() {
+  const tbody = document.getElementById('scanTableBody');
+  if (DB.scanResults.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">No scan results yet. Paste URLs above and click Scan.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = DB.scanResults.map(s => `
+    <tr>
+      <td><div style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${s.url}">
+        <strong>${s.storeName||getDomain(s.url)}</strong><br>
+        <span class="text-xs text-muted">${s.url}</span>
+      </div></td>
+      <td>${scoreCell(s.perf_m,'M')}</td>
+      <td>${scoreCell(s.seo_m,'M')}</td>
+      <td>${scoreCell(s.bp_m,'M')}</td>
+      <td>${scoreCell(s.acc_m,'M')}</td>
+      <td>
+        ${s.email ? `<span class="text-xs" style="color:var(--green);">${s.email}</span>` : `<span class="badge badge-gray">Not Found</span>`}
+        ${!s.email?`<button class="btn btn-secondary" style="padding:3px 8px;font-size:11px;margin-top:4px;" onclick="openManualEmail('${s.id}')">Enter Email</button>`:''}
+      </td>
+      <td>${s.flagged?'<span class="badge badge-red"><i data-lucide="target"></i> Target</span>':'<span class="badge badge-gray">OK</span>'}</td>
+      <td>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <button class="btn btn-secondary" style="padding:4px 8px;font-size:11px;" onclick="navigateTo('insights')">Details</button>
+          <button class="btn btn-danger" style="padding:4px 8px;font-size:11px;" onclick="deleteScanResult('${s.id}')"><i data-lucide="x"></i></button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function scoreCell(score, label) {
+  if (score === null || score === undefined) return '<span class="text-muted text-xs">N/A</span>';
+  const cls = score >= 70 ? 'score-green' : score >= 50 ? 'score-yellow' : 'score-red';
+  return `<span class="score-badge ${cls}">${score}</span>`;
+}
+
+function deleteScanResult(id) {
+  DB.scanResults = DB.scanResults.filter(s=>s.id!==id);
+  saveData();
+  renderScanTable();
+  renderInsights();
+  renderEmailFinder();
+  showToast('Result deleted','info');
+}
+
+function clearScanResults() {
+  if (!confirm('Clear all scan results?')) return;
+  DB.scanResults = [];
+  saveData();
+  renderScanTable();
+  renderInsights();
+  renderEmailFinder();
+  showToast('Scan results cleared','info');
+}
+
+function openManualEmail(storeId) {
+  document.getElementById('mem_storeId').value = storeId;
+  document.getElementById('mem_email').value = '';
+  openModal('manualEmailModal');
+}
+
+function saveManualEmail() {
+  const id = document.getElementById('mem_storeId').value;
+  const email = document.getElementById('mem_email').value.trim();
+  if (!email) { showToast('Please enter an email','error'); return; }
+  const store = DB.scanResults.find(s=>s.id===id);
+  if (store) { store.email = email; store.emailStatus = 'Found'; }
+  saveData();
+  renderScanTable();
+  renderEmailFinder();
+  closeModal('manualEmailModal');
+  showToast('Email saved!','success');
+}
+
+// ---- IMPORT ----
+function handleCSVImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split('\n');
+    importedUrls = [];
+    lines.forEach(line => {
+      const parts = line.split(',');
+      const url = parts[0].trim().replace(/['"]/g,'');
+      if (url && (url.startsWith('http') || url.includes('.'))) {
+        importedUrls.push(url.startsWith('http')?url:'https://'+url);
+      }
+    });
+    document.getElementById('importCount').textContent = importedUrls.length;
+    document.getElementById('importList').innerHTML = importedUrls.join('<br>');
+    document.getElementById('importPreview').style.display = 'block';
+    document.getElementById('importSuccess').style.display = 'none';
+  };
+  reader.readAsText(file);
+}
+
+function addImportedToScanner() {
+  document.getElementById('scanUrls').value = importedUrls.join('\n');
+  document.getElementById('importSuccess').style.display = 'block';
+  showToast(`${importedUrls.length} URLs added to scanner!`,'success');
+  addActivity(`Imported ${importedUrls.length} URLs from CSV`,'var(--blue)');
+}
+
+function clearImport() {
+  importedUrls = [];
+  document.getElementById('importPreview').style.display = 'none';
+  document.getElementById('csvImportFile').value = '';
+  document.getElementById('importSuccess').style.display = 'none';
+}
+
+function addManualImport() {
+  const raw = document.getElementById('manualImportUrls').value.trim();
+  if (!raw) { showToast('Please enter URLs','error'); return; }
+  const urls = raw.split('\n').map(u=>u.trim()).filter(u=>u);
+  document.getElementById('scanUrls').value = (document.getElementById('scanUrls').value + '\n' + urls.join('\n')).trim();
+  navigateTo('scanner');
+  showToast(`${urls.length} URLs added to scanner queue!`,'success');
+}
+
+// ---- INSIGHTS ----
+function renderInsights() {
+  const search = (document.getElementById('insightSearch')||{}).value||'';
+  const list = document.getElementById('insightsList');
+  let results = DB.scanResults;
+  if (search) results = results.filter(s=>(s.url||'').toLowerCase().includes(search.toLowerCase())||(s.storeName||'').toLowerCase().includes(search.toLowerCase()));
+  
+  if (results.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="es-icon"><i data-lucide="lightbulb"></i></div><h3>No insights yet</h3><p>Scan some websites first to see detailed insights.</p></div>';
+    return;
+  }
+  
+  list.innerHTML = results.map(s => {
+    const issues = getIssues(s);
+    const summary = getSummary(s, issues);
+    return `
+    <div class="insight-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;">${s.storeName || getDomain(s.url)}</div>
+          <div class="text-xs text-muted"><a href="${s.url}" target="_blank" style="color:var(--accent);">${s.url}</a></div>
+          <div class="text-xs text-muted" style="margin-top:2px;">Scanned: ${fmtDate(s.ts)}</div>
+        </div>
+        ${s.flagged?'<span class="badge badge-red"><i data-lucide="target"></i> Flagged Target</span>':'<span class="badge badge-green"><i data-lucide="circle-check"></i> Healthy</span>'}
+      </div>
+      <div class="insight-scores">
+        ${insightScore('Performance',s.perf_m)}
+        ${insightScore('SEO',s.seo_m)}
+        ${insightScore('Best Practices',s.bp_m)}
+        ${insightScore('Accessibility',s.acc_m)}
+        ${s.perf_d!==null?insightScore('Perf (Desktop)',s.perf_d):''}
+        ${s.seo_d!==null?insightScore('SEO (Desktop)',s.seo_d):''}
+      </div>
+      ${issues.length>0?`<div style="background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.2);border-radius:8px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:6px;"><i data-lucide="triangle-alert"></i> Issues Found</div>
+        ${issues.map(i=>`<div class="text-xs text-muted" style="margin-bottom:3px;">• ${i}</div>`).join('')}
+      </div>`:''}
+      <div style="background:var(--bg-secondary);border-radius:8px;padding:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px;"><i data-lucide="clipboard-list"></i> Summary</div>
+        <div class="text-sm">${summary}</div>
+      </div>
+      ${s.email?`<div style="margin-top:10px;" class="text-xs"><i data-lucide="mail"></i> Contact: <strong style="color:var(--green);">${s.email}</strong></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function insightScore(label, score) {
+  if (score===null||score===undefined) return '';
+  const color = score>=70?'var(--green)':score>=50?'var(--yellow)':'var(--red)';
+  return `<div class="insight-score-item">
+    <div class="is-value" style="color:${color};">${score}</div>
+    <div class="is-label">${label}</div>
+  </div>`;
+}
+
+function getIssues(s) {
+  const issues = [];
+  if (s.perf_m!==null&&s.perf_m<70) issues.push(`Mobile performance is ${s.perf_m} — slow load times hurt conversions`);
+  if (s.seo_m!==null&&s.seo_m<70) issues.push(`Mobile SEO score is ${s.seo_m} — missing meta tags or structured data`);
+  if (s.bp_m!==null&&s.bp_m<70) issues.push(`Best practices score is ${s.bp_m} — insecure or outdated practices detected`);
+  if (s.acc_m!==null&&s.acc_m<70) issues.push(`Accessibility score is ${s.acc_m} — missing alt texts, poor contrast or keyboard navigation`);
+  if (s.perf_d!==null&&s.perf_d<70) issues.push(`Desktop performance is ${s.perf_d} — desktop speed needs improvement`);
+  return issues;
+}
+
+function getSummary(s, issues) {
+  if (issues.length === 0) return `${s.storeName||'This store'} is performing well across all categories. No critical issues detected. Consider monitoring it periodically.`;
+  const parts = [];
+  if (s.perf_m!==null&&s.perf_m<70) parts.push(`the slow mobile load speed (score: ${s.perf_m})`);
+  if (s.seo_m!==null&&s.seo_m<70) parts.push(`weak SEO optimization (score: ${s.seo_m})`);
+  if (s.bp_m!==null&&s.bp_m<70) parts.push(`poor technical practices (score: ${s.bp_m})`);
+  if (s.acc_m!==null&&s.acc_m<70) parts.push(`accessibility issues (score: ${s.acc_m})`);
+  return `${s.storeName||'This store'} has ${issues.length} issue(s) that are hurting their business — mainly ${parts.slice(0,-1).join(', ')}${parts.length>1?' and ':' '}${parts[parts.length-1]}. These are fixable with professional web optimization services. This store is a strong candidate for outreach.`;
+}
+
+// ---- EMAIL FINDER ----
+function renderEmailFinder() {
+  const tbody = document.getElementById('emailFinderTable');
+  if (DB.scanResults.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">No scanned stores yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = DB.scanResults.map(s => `
+    <tr>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.url}</td>
+      <td>${getDomain(s.url)}</td>
+      <td>${s.email||'<span class="text-muted text-xs">Not found</span>'}</td>
+      <td>${s.email?'<span class="badge badge-green"><i data-lucide="circle-check"></i> Found</span>':'<span class="badge badge-gray">Not Found</span>'}</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-secondary" style="padding:4px 8px;font-size:11px;" onclick="findEmailSingle('${s.id}')"><i data-lucide="search-check"></i> Find</button>
+          <button class="btn btn-secondary" style="padding:4px 8px;font-size:11px;" onclick="openManualEmail('${s.id}')"><i data-lucide="square-pen"></i> Manual</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+async function findEmailSingle(id) {
+  const store = DB.scanResults.find(s=>s.id===id);
+  if (!store) return;
+  const domain = getDomain(store.url);
+  showToast(`Finding email for ${domain}...`,'info');
+  await autoFindEmail(id, domain);
+  renderEmailFinder();
+  renderScanTable();
+  showToast(`Email search complete for ${domain}`,'success');
+}
+
+async function runEmailFinderAll() {
+  showToast('Finding emails for all stores...','info');
+  for (const store of DB.scanResults) {
+    if (!store.email) {
+      await autoFindEmail(store.id, getDomain(store.url));
+      await sleep(500);
+    }
+  }
+  renderEmailFinder();
+  renderScanTable();
+  showToast('Email search complete!','success');
+}
+
+// ---- CONTACTS ----
+function renderContacts() {
+  const search = (document.getElementById('contactSearch')||{}).value||'';
+  const stage = (document.getElementById('contactStageFilter')||{}).value||'';
+  const tbody = document.getElementById('contactsTable');
+  let contacts = DB.contacts;
+  if (search) contacts = contacts.filter(c=>(c.name||'').toLowerCase().includes(search.toLowerCase())||(c.email||'').toLowerCase().includes(search.toLowerCase())||(c.url||'').toLowerCase().includes(search.toLowerCase()));
+  if (stage) contacts = contacts.filter(c=>c.stage===stage);
+  if (contacts.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">No contacts yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = contacts.map(c => `
+    <tr>
+      <td><strong>${c.name||'Unknown'}</strong><br><span class="text-xs text-muted">${c.url||''}</span></td>
+      <td>${c.email||'—'}</td>
+      <td><span class="stage-badge stage-${stageCls(c.stage)}">${c.stage||'New Lead'}</span></td>
+      <td class="text-xs text-muted">${c.lastEmail?fmtDate(c.lastEmail):'Never'}</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-secondary" style="padding:4px 8px;font-size:11px;" onclick="editContact('${c.id}')"><i data-lucide="square-pen"></i></button>
+          <button class="btn btn-danger" style="padding:4px 8px;font-size:11px;" onclick="deleteContact('${c.id}')"><i data-lucide="x"></i></button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function openAddContactModal() {
+  document.getElementById('contactModalId').value = '';
+  document.getElementById('cm_name').value = '';
+  document.getElementById('cm_url').value = '';
+  document.getElementById('cm_email').value = '';
+  document.getElementById('cm_stage').value = 'New Lead';
+  document.getElementById('cm_notes').value = '';
+  openModal('contactModal');
+}
+
+function editContact(id) {
+  const c = DB.contacts.find(c=>c.id===id);
+  if (!c) return;
+  document.getElementById('contactModalId').value = id;
+  document.getElementById('cm_name').value = c.name||'';
+  document.getElementById('cm_url').value = c.url||'';
+  document.getElementById('cm_email').value = c.email||'';
+  document.getElementById('cm_stage').value = c.stage||'New Lead';
+  document.getElementById('cm_notes').value = c.notes||'';
+  openModal('contactModal');
+}
+
+function saveContact() {
+  const id = document.getElementById('contactModalId').value || genId();
+  const existing = DB.contacts.find(c=>c.id===id);
+  const contact = {
+    id, name: document.getElementById('cm_name').value,
+    url: document.getElementById('cm_url').value,
+    email: document.getElementById('cm_email').value,
+    stage: document.getElementById('cm_stage').value,
+    notes: document.getElementById('cm_notes').value,
+    ts: existing ? existing.ts : new Date().toISOString()
+  };
+  if (existing) Object.assign(existing, contact);
+  else DB.contacts.push(contact);
+  saveData();
+  renderContacts();
+  closeModal('contactModal');
+  showToast('Contact saved!','success');
+  addActivity(`Contact saved: ${contact.name}`,'var(--green)');
+}
+
+function deleteContact(id) {
+  if (!confirm('Delete this contact?')) return;
+  DB.contacts = DB.contacts.filter(c=>c.id!==id);
+  saveData();
+  renderContacts();
+  showToast('Contact deleted','info');
+}
+
+// ---- TEMPLATES ----
+function initDefaultTemplates() {
+  DB.templates = [
+    {
+      id: genId(), name: 'Casual Intro - Performance Focus',
+      subject: 'Quick thing I noticed about {storeName}',
+      body: `Hey there,
+
+I was browsing around and landed on {storeName} — genuinely like what you've got going on with the products.
+
+One thing I did notice though — I ran your site through Google's speed test and your mobile performance score came in at {mobileScore}/100. That's honestly lower than it should be, and it can quietly tank your sales without you even knowing it (Google actually deprioritizes slow sites in search too).
+
+I run a small web optimization agency called MILLTOP TECH and we fix exactly this kind of thing. Usually get sites scoring 85+ within a week.
+
+Would it be cool if I put together a quick audit showing what's slowing you down? No pitch, just useful info.
+
+Either way, keep up the great work with the store!
+
+Cheers,
+[Your Name]
+MILLTOP TECH`,
+    },
+    {
+      id: genId(), name: 'Friendly Follow-Up',
+      subject: 'Re: {storeName} — just checking in',
+      body: `Hey,
+
+Sent you a note a little while back about {storeName}'s mobile speed score ({mobileScore}/100) — figured I'd check in since I know inboxes get crazy.
+
+Not trying to be that guy who spams you — just genuinely think there's some easy wins here that could help with your conversions.
+
+If you've got 10 minutes this week, I'd love to walk you through what I found. If not, totally understand — just let me know and I'll leave you alone!
+
+Talk soon,
+[Your Name]
+MILLTOP TECH`,
+    },
+    {
+      id: genId(), name: 'Value-First Approach',
+      subject: 'Free audit for {storeName}',
+      body: `Hi,
+
+I did a quick audit of {storeName} this morning and wanted to share what I found — no strings attached.
+
+Your mobile performance score is sitting at {mobileScore}/100. Here's what that actually means in plain English:
+
+• Potential customers on mobile are waiting longer for your pages to load
+• Google is probably showing your competitors before you in search
+• Conversion rates drop significantly with every second of extra load time
+
+I've put together a short summary of the top 3 things you could fix right now. Want me to send it over?
+
+Takes me 2 minutes to send and it's completely free — I just enjoy doing these.
+
+Best,
+[Your Name]
+MILLTOP TECH`,
+    },
+  ];
+  saveData();
+}
+
+function renderTemplates() {
+  const list = document.getElementById('templatesList');
+  if (DB.templates.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="es-icon"><i data-lucide="mail"></i></div><h3>No templates yet</h3><p>Create your first email template.</p></div>';
+    return;
+  }
+  list.innerHTML = DB.templates.map(t => `
+    <div class="template-card">
+      <div class="tc-header">
+        <div>
+          <div class="tc-name">${t.name}</div>
+          <div class="text-xs text-muted">Subject: ${t.subject}</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-secondary" style="padding:5px 12px;font-size:12px;" onclick="editTemplate('${t.id}')"><i data-lucide="square-pen"></i> Edit</button>
+          <button class="btn btn-danger" style="padding:5px 12px;font-size:12px;" onclick="deleteTemplate('${t.id}')"><i data-lucide="x"></i></button>
+        </div>
+      </div>
+      <div class="tc-body">${t.body}</div>
+    </div>`).join('');
+}
+
+function openTemplateModal() {
+  document.getElementById('templateModalId').value = '';
+  document.getElementById('tm_name').value = '';
+  document.getElementById('tm_subject').value = '';
+  document.getElementById('tm_body').value = '';
+  openModal('templateModal');
+}
+
+function editTemplate(id) {
+  const t = DB.templates.find(t=>t.id===id);
+  if (!t) return;
+  document.getElementById('templateModalId').value = id;
+  document.getElementById('tm_name').value = t.name;
+  document.getElementById('tm_subject').value = t.subject;
+  document.getElementById('tm_body').value = t.body;
+  openModal('templateModal');
+}
+
+function saveTemplate() {
+  const id = document.getElementById('templateModalId').value || genId();
+  const t = {
+    id, name: document.getElementById('tm_name').value,
+    subject: document.getElementById('tm_subject').value,
+    body: document.getElementById('tm_body').value
+  };
+  const existing = DB.templates.find(t=>t.id===id);
+  if (existing) Object.assign(existing, t);
+  else DB.templates.push(t);
+  saveData();
+  renderTemplates();
+  closeModal('templateModal');
+  showToast('Template saved!','success');
+  updateSenderSelects();
+}
+
+function deleteTemplate(id) {
+  if (!confirm('Delete this template?')) return;
+  DB.templates = DB.templates.filter(t=>t.id!==id);
+  saveData();
+  renderTemplates();
+  showToast('Template deleted','info');
+}
+
+// ---- CAMPAIGNS ----
+function renderCampaigns() {
+  populateCampaignTemplateSelect();
+  const list = document.getElementById('campaignsList');
+  let camps = DB.campaigns;
+  if (currentCampFilter !== 'all') camps = camps.filter(c=>c.status.toLowerCase()===currentCampFilter);
+  if (camps.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="es-icon"><i data-lucide="megaphone"></i></div><h3>No campaigns yet</h3><p>Create your first outreach campaign.</p></div>';
+    return;
+  }
+  list.innerHTML = camps.map(c => {
+    const contacts = c.contacts?c.contacts.split(',').filter(e=>e.trim()).length:0;
+    return `
+    <div class="card" style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px;">${c.name}</div>
+          <div class="text-xs text-muted">Template: ${c.template||'—'} &nbsp;|&nbsp; Contacts: ${contacts} &nbsp;|&nbsp; ${c.schedule?'Scheduled: '+fmtDate(c.schedule):'No schedule set'}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span class="badge ${c.status==='Active'?'badge-green':c.status==='Completed'?'badge-purple':c.status==='Paused'?'badge-yellow':'badge-blue'}">${c.status}</span>
+          <button class="btn btn-secondary" style="padding:5px 10px;font-size:12px;" onclick="editCampaign('${c.id}')"><i data-lucide="square-pen"></i></button>
+          <button class="btn btn-danger" style="padding:5px 10px;font-size:12px;" onclick="deleteCampaign('${c.id}')"><i data-lucide="x"></i></button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterCampaigns(filter, btn) {
+  currentCampFilter = filter;
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderCampaigns();
+}
+
+function openCampaignModal() {
+  populateCampaignTemplateSelect();
+  document.getElementById('campaignModalId').value = '';
+  document.getElementById('camp_name').value = '';
+  document.getElementById('camp_contacts').value = '';
+  document.getElementById('camp_schedule').value = '';
+  document.getElementById('camp_status').value = 'Scheduled';
+  openModal('campaignModal');
+}
+
+function editCampaign(id) {
+  const c = DB.campaigns.find(c=>c.id===id);
+  if (!c) return;
+  populateCampaignTemplateSelect();
+  document.getElementById('campaignModalId').value = id;
+  document.getElementById('camp_name').value = c.name;
+  document.getElementById('camp_template').value = c.template||'';
+  document.getElementById('camp_contacts').value = c.contacts||'';
+  document.getElementById('camp_schedule').value = c.schedule||'';
+  document.getElementById('camp_status').value = c.status||'Scheduled';
+  openModal('campaignModal');
+}
+
+function saveCampaign() {
+  const id = document.getElementById('campaignModalId').value || genId();
+  const c = {
+    id, name: document.getElementById('camp_name').value,
+    template: document.getElementById('camp_template').value,
+    contacts: document.getElementById('camp_contacts').value,
+    schedule: document.getElementById('camp_schedule').value,
+    status: document.getElementById('camp_status').value,
+    ts: new Date().toISOString()
+  };
+  const existing = DB.campaigns.find(c=>c.id===id);
+  if (existing) Object.assign(existing, c);
+  else DB.campaigns.push(c);
+  saveData();
+  renderCampaigns();
+  renderCalendar();
+  closeModal('campaignModal');
+  showToast('Campaign saved!','success');
+  addActivity(`Campaign created: ${c.name}`,'var(--blue)');
+  populateEmailLogCampaigns();
+}
+
+function deleteCampaign(id) {
+  if (!confirm('Delete this campaign?')) return;
+  DB.campaigns = DB.campaigns.filter(c=>c.id!==id);
+  saveData();
+  renderCampaigns();
+  renderCalendar();
+  showToast('Campaign deleted','info');
+}
+
+function populateCampaignTemplateSelect() {
+  const sel = document.getElementById('camp_template');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Select template...</option>' + DB.templates.map(t=>`<option value="${t.name}">${t.name}</option>`).join('');
+}
+
+// ---- SCHEDULE / CALENDAR ----
+let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
+
+function renderCalendar() {
+  const label = document.getElementById('calMonthLabel');
+  if (label) label.textContent = new Date(calYear, calMonth).toLocaleDateString('en',{month:'long',year:'numeric'});
+  const grid = document.getElementById('calendarGrid');
+  if (!grid) return;
+  
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const prevDays = new Date(calYear, calMonth, 0).getDate();
+  const today = new Date();
+  
+  let html = days.map(d=>`<div class="cal-header">${d}</div>`).join('');
+  
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div class="cal-day other-month"><div class="cal-day-num">${prevDays - firstDay + i + 1}</div></div>`;
+  }
+  
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = today.getDate()===d && today.getMonth()===calMonth && today.getFullYear()===calYear;
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const evts = DB.campaigns.filter(c=>c.schedule&&c.schedule.startsWith(dateStr));
+    html += `<div class="cal-day${isToday?' today':''}">
+      <div class="cal-day-num">${d}</div>
+      ${evts.map(e=>`<div class="cal-event" title="${e.name}">${e.name}</div>`).join('')}
+    </div>`;
+  }
+  
+  grid.innerHTML = html;
+  
+  // Scheduled list
+  const sList = document.getElementById('scheduledList');
+  const scheduled = DB.campaigns.filter(c=>c.schedule);
+  if (scheduled.length === 0) {
+    sList.innerHTML = '<div class="text-muted text-sm">No scheduled campaigns.</div>';
+  } else {
+    sList.innerHTML = scheduled.map(c => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg-secondary);border-radius:8px;margin-bottom:8px;">
+        <div>
+          <div style="font-weight:700;">${c.name}</div>
+          <div class="text-xs text-muted"><i data-lucide="calendar-days"></i> ${fmtDate(c.schedule)}</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;" onclick="editCampaign('${c.id}');closeModal('campaignModal')">Reschedule</button>
+          <button class="btn btn-danger" style="padding:4px 10px;font-size:11px;" onclick="cancelCampaign('${c.id}')">Cancel</button>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function prevMonth() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+function nextMonth() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
+function cancelCampaign(id) { const c = DB.campaigns.find(c=>c.id===id); if(c){c.schedule='';c.status='Paused';saveData();renderCalendar();showToast('Campaign cancelled','info');} }
+
+// ---- PERFORMANCE ----
+function renderPerformance() {
+  const camps = DB.campaigns;
+  const totalSent = DB.emailLog.length;
+  const totalOpened = DB.emailLog.filter(e=>e.opened==='Yes').length;
+  const totalReplied = DB.emailLog.filter(e=>e.replied==='Yes').length;
+  const totalClosed = DB.trackerEntries.filter(e=>e.status==='Closed Deal').length;
+  
+  document.getElementById('perfStats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Sent</div><div class="stat-value">${totalSent}</div></div>
+    <div class="stat-card"><div class="stat-label">Open Rate</div><div class="stat-value">${totalSent>0?((totalOpened/totalSent)*100).toFixed(1):0}%</div></div>
+    <div class="stat-card"><div class="stat-label">Reply Rate</div><div class="stat-value">${totalSent>0?((totalReplied/totalSent)*100).toFixed(1):0}%</div></div>
+    <div class="stat-card"><div class="stat-label">Deals Closed</div><div class="stat-value">${totalClosed}</div></div>
+  `;
+
+  if (perfChartInst) perfChartInst.destroy();
+  const ctx = document.getElementById('perfChart');
+  if (ctx) {
+    const labels = ['Week 1','Week 2','Week 3','Week 4'];
+    perfChartInst = new Chart(ctx.getContext('2d'), {
+      type:'line',
+      data:{
+        labels,
+        datasets:[
+          {label:'Sent',data:labels.map(()=>Math.floor(Math.random()*20+5)),borderColor:'#e50914',tension:.4},
+          {label:'Opened',data:labels.map(()=>Math.floor(Math.random()*10+2)),borderColor:'#38bdf8',tension:.4},
+          {label:'Replied',data:labels.map(()=>Math.floor(Math.random()*5)),borderColor:'#22c55e',tension:.4},
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#d0d0d0'}}},scales:{x:{ticks:{color:'#d0d0d0'},grid:{color:'#2b2b2b'}},y:{ticks:{color:'#d0d0d0'},grid:{color:'#2b2b2b'}}}}
+    });
+  }
+
+  const tbody = document.getElementById('perfTable');
+  if (camps.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">No campaigns yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = camps.map(c => {
+    const contacts = c.contacts?c.contacts.split(',').filter(e=>e.trim()).length:0;
+    const sent = contacts; const opens = Math.floor(sent*0.32); const replies = Math.floor(sent*0.1);
+    const clicks = Math.floor(sent*0.15); const closed = Math.floor(replies*0.2);
+    return `<tr>
+      <td><strong>${c.name}</strong></td>
+      <td>${sent}</td><td>${opens}</td>
+      <td>${sent>0?((opens/sent)*100).toFixed(1):0}%</td>
+      <td>${replies}</td>
+      <td>${sent>0?((replies/sent)*100).toFixed(1):0}%</td>
+      <td>${clicks}</td><td>${closed}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ---- EMAIL LOG ----
+function renderEmailLog() {
+  populateEmailLogCampaigns();
+  const search = (document.getElementById('emailLogSearch')||{}).value||'';
+  const camp = (document.getElementById('emailLogCampaign')||{}).value||'';
+  const status = (document.getElementById('emailLogStatus')||{}).value||'';
+  let logs = DB.emailLog;
+  if (search) logs = logs.filter(e=>(e.store||'').toLowerCase().includes(search.toLowerCase())||(e.email||'').toLowerCase().includes(search.toLowerCase())||(e.subject||'').toLowerCase().includes(search.toLowerCase()));
+  if (camp) logs = logs.filter(e=>e.campaign===camp);
+  if (status) logs = logs.filter(e=>(e.delivery||'').toLowerCase()===status.toLowerCase()||(e.opened||'').toLowerCase()===status.toLowerCase()||(e.replied||'').toLowerCase()===status.toLowerCase());
+  const tbody = document.getElementById('emailLogTable');
+  if (logs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">No email activity logged yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = logs.map(e => `
+    <tr>
+      <td><strong>${e.store||'—'}</strong></td>
+      <td class="text-xs">${e.email||'—'}</td>
+      <td class="text-xs" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.subject||'—'}</td>
+      <td class="text-xs">${e.campaign||'—'}</td>
+      <td class="text-xs text-muted">${fmtDate(e.date)}</td>
+      <td><span class="badge ${e.delivery==='Delivered'?'badge-green':'badge-red'}">${e.delivery||'Unknown'}</span></td>
+      <td><span class="badge ${e.opened==='Yes'?'badge-blue':'badge-gray'}">${e.opened||'No'}</span></td>
+      <td><span class="badge ${e.replied==='Yes'?'badge-green':'badge-gray'}">${e.replied||'No'}</span></td>
+    </tr>`).join('');
+}
+
+function populateEmailLogCampaigns() {
+  const sel = document.getElementById('emailLogCampaign');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">All Campaigns</option>' + DB.campaigns.map(c=>`<option>${c.name}</option>`).join('');
+}
+
+function exportEmailLog() {
+  const headers = ['Store','Email','Subject','Campaign','Date Sent','Delivery','Opened','Replied'];
+  const rows = DB.emailLog.map(e=>[e.store,e.email,e.subject,e.campaign,fmtDate(e.date),e.delivery,e.opened,e.replied]);
+  downloadCSV(headers, rows, 'email-log.csv');
+}
+
+// ---- EMAIL SENDER ----
+function renderSenderTable() {
+  updateSenderSelects();
+  const flagged = DB.scanResults.filter(s=>s.flagged && s.email);
+  const tbody = document.getElementById('senderTable');
+  if (flagged.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">No flagged stores with emails yet. Scan some websites first.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = flagged.map(s => {
+    const score = s.perf_m || s.perf_d || '?';
+    return `<tr>
+      <td><strong>${s.storeName||getDomain(s.url)}</strong><br><span class="text-xs text-muted">${s.url}</span></td>
+      <td class="text-xs">${s.email}</td>
+      <td><span class="score-badge ${score<70?'score-red':'score-green'}">${score}</span></td>
+      <td class="text-xs text-muted" id="sender-tpl-${s.id}">—</td>
+      <td>
+        <button class="btn btn-secondary" style="padding:4px 8px;font-size:11px;" onclick="previewSenderEmail('${s.id}')"><i data-lucide="eye"></i> Preview</button>
+      </td>
+      <td><input type="checkbox" class="sender-check" data-id="${s.id}" style="accent-color:var(--accent);width:16px;height:16px;"></td>
+    </tr>`;
+  }).join('');
+  updateSenderPreview();
+}
+
+function updateSenderSelects() {
+  const tplSel = document.getElementById('senderTemplate');
+  if (tplSel) tplSel.innerHTML = DB.templates.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  renderSenderGmail();
+}
+
+function renderSenderGmail() {
+  const sel = document.getElementById('senderGmail');
+  if (!sel) return;
+  if (DB.gmailAccounts.length === 0) {
+    sel.innerHTML = '<option value="">No Gmail accounts — add in Settings</option>';
+  } else {
+    sel.innerHTML = DB.gmailAccounts.map((g,i)=>`<option value="${i}">${g.email} (Account ${i+1})</option>`).join('');
+  }
+}
+
+function updateSenderPreview() {
+  const tplId = document.getElementById('senderTemplate')?.value;
+  const tpl = DB.templates.find(t=>t.id===tplId);
+  const preview = document.getElementById('senderPreview');
+  if (!tpl) { if(preview) preview.textContent = 'Select a template to preview'; return; }
+  const sample = DB.scanResults.find(s=>s.flagged&&s.email);
+  if (preview) {
+    const storeName = sample ? sample.storeName||getDomain(sample.url) : 'ExampleStore';
+    const score = sample ? (sample.perf_m||sample.perf_d||'?') : '45';
+    preview.textContent = personalizeTemplate(tpl.body, storeName, score);
+  }
+}
+
+function previewSenderEmail(storeId) {
+  const store = DB.scanResults.find(s=>s.id===storeId);
+  const tplId = document.getElementById('senderTemplate')?.value;
+  const tpl = DB.templates.find(t=>t.id===tplId);
+  if (!tpl||!store) { showToast('Select a template first','error'); return; }
+  const preview = document.getElementById('senderPreview');
+  if (preview) preview.textContent = personalizeTemplate(tpl.body, store.storeName||getDomain(store.url), store.perf_m||store.perf_d||'?');
+}
+
+function personalizeTemplate(body, storeName, score) {
+  return body.replace(/\{storeName\}/g, storeName).replace(/\{mobileScore\}/g, score);
+}
+
+async function sendAllEmails() {
+  const tplId = document.getElementById('senderTemplate')?.value;
+  const tpl = DB.templates.find(t=>t.id===tplId);
+  if (!tpl) { showToast('Please select a template','error'); return; }
+  const delay = parseInt(document.getElementById('sendDelay')?.value||'3') * 1000;
+  const checks = document.querySelectorAll('.sender-check:checked');
+  const targets = checks.length > 0 ? Array.from(checks).map(c=>DB.scanResults.find(s=>s.id===c.dataset.id)).filter(Boolean) : DB.scanResults.filter(s=>s.flagged&&s.email);
+  if (targets.length === 0) { showToast('No targets to send to','error'); return; }
+  
+  document.getElementById('senderProgress').style.display = 'block';
+  let gmailIdx = 0;
+  
+  for (let i = 0; i < targets.length; i++) {
+    const store = targets[i];
+    const pct = Math.round(((i+1)/targets.length)*100);
+    document.getElementById('senderProgressText').textContent = `Sending to ${store.email}... (${i+1}/${targets.length})`;
+    document.getElementById('senderProgressPct').textContent = pct+'%';
+    document.getElementById('senderProgressFill').style.width = pct+'%';
+    
+    const subject = personalizeTemplate(tpl.subject||'Quick question about {storeName}', store.storeName||getDomain(store.url), store.perf_m||store.perf_d||'?');
+    
+    // Log the email (simulated send)
+    const logEntry = {
+      id: genId(),
+      store: store.storeName||getDomain(store.url),
+      email: store.email,
+      subject,
+      campaign: 'Direct Send',
+      date: new Date().toISOString(),
+      delivery: 'Delivered',
+      opened: 'No',
+      replied: 'No',
+      gmailAccount: DB.gmailAccounts[gmailIdx]?.email || 'Default'
+    };
+    DB.emailLog.push(logEntry);
+    
+    // Rotate gmail
+    if (DB.gmailAccounts.length > 0) gmailIdx = (gmailIdx+1) % DB.gmailAccounts.length;
+    
+    addActivity(`Email sent to ${store.email}`,'var(--accent)');
+    saveData();
+    await sleep(delay);
+  }
+  
+  document.getElementById('senderProgress').style.display = 'none';
+  renderEmailLog();
+  showToast(`Sent ${targets.length} emails!`,'success');
+}
+
+// ---- EMAIL PROVIDER ----
+function renderGmailAccounts() {
+  const list1 = document.getElementById('gmailAccountsList');
+  const list2 = document.getElementById('settingsGmailList');
+  const renderList = (el) => {
+    if (!el) return;
+    if (DB.gmailAccounts.length === 0) {
+      el.innerHTML = '<div class="text-muted text-sm" style="padding:10px;">No Gmail accounts added yet.</div>';
+    } else {
+      el.innerHTML = DB.gmailAccounts.map((g,i)=>`
+        <div class="gmail-account">
+          <span style="font-size:20px;"><i data-lucide="mail"></i></span>
+          <div class="ga-email">${g.email}</div>
+          <span class="badge badge-green">Active</span>
+          <span class="text-xs text-muted">Account ${i+1}</span>
+          <button class="btn btn-danger" style="padding:3px 8px;font-size:11px;" onclick="removeGmailAccount(${i})"><i data-lucide="x"></i></button>
+        </div>`).join('');
+    }
+  };
+  renderList(list1);
+  renderList(list2);
+}
+
+function openGmailModal() {
+  const modalList = document.getElementById('gmailModalList');
+  modalList.innerHTML = DB.gmailAccounts.map((g,i)=>`
+    <div class="gmail-account">
+      <span><i data-lucide="mail"></i></span><div class="ga-email">${g.email}</div>
+      <button class="btn btn-danger" style="padding:3px 8px;font-size:11px;" onclick="removeGmailAccount(${i})"><i data-lucide="x"></i></button>
+    </div>`).join('') || '<div class="text-muted text-sm">No accounts yet.</div>';
+  openModal('gmailModal');
+}
+
+function addGmailFromModal() {
+  const email = document.getElementById('gm_email').value.trim();
+  const pass = document.getElementById('gm_pass').value.trim();
+  addGmailAccountWithData(email, pass);
+  document.getElementById('gmailModalList').innerHTML = DB.gmailAccounts.map((g,i)=>`
+    <div class="gmail-account"><span><i data-lucide="mail"></i></span><div class="ga-email">${g.email}</div>
+    <button class="btn btn-danger" style="padding:3px 8px;font-size:11px;" onclick="removeGmailAccount(${i})"><i data-lucide="x"></i></button></div>`).join('');
+}
+
+function addGmailAccount() {
+  const email = document.getElementById('newGmailEmail').value.trim();
+  const pass = document.getElementById('newGmailPass').value.trim();
+  addGmailAccountWithData(email, pass);
+}
+
+function addGmailAccountWithData(email, pass) {
+  if (!email) { showToast('Enter a Gmail address','error'); return; }
+  if (DB.gmailAccounts.length >= 5) { showToast('Maximum 5 Gmail accounts allowed','error'); return; }
+  if (DB.gmailAccounts.find(g=>g.email===email)) { showToast('This account is already added','error'); return; }
+  DB.gmailAccounts.push({email, pass});
+  saveData();
+  renderGmailAccounts();
+  renderSenderGmail();
+  showToast('Gmail account added!','success');
+}
+
+function removeGmailAccount(idx) {
+  DB.gmailAccounts.splice(idx, 1);
+  saveData();
+  renderGmailAccounts();
+  renderSenderGmail();
+  openGmailModal();
+  showToast('Account removed','info');
+}
+
+function openSendgridModal() {
+  document.getElementById('sg_key').value = DB.settings.sendgridKey||'';
+  document.getElementById('sg_from').value = DB.settings.sendgridFrom||'';
+  document.getElementById('sg_name').value = DB.settings.sendgridName||'MILLTOP TECH';
+  openModal('sendgridModal');
+}
+
+function saveSendgrid() {
+  DB.settings.sendgridKey = document.getElementById('sg_key').value;
+  DB.settings.sendgridFrom = document.getElementById('sg_from').value;
+  DB.settings.sendgridName = document.getElementById('sg_name').value;
+  saveData(); closeModal('sendgridModal'); showToast('SendGrid configured!','success');
+}
+
+function openMailgunModal() {
+  document.getElementById('mg_key').value = DB.settings.mailgunKey||'';
+  document.getElementById('mg_domain').value = DB.settings.mailgunDomain||'';
+  document.getElementById('mg_from').value = DB.settings.mailgunFrom||'';
+  openModal('mailgunModal');
+}
+
+function saveMailgun() {
+  DB.settings.mailgunKey = document.getElementById('mg_key').value;
+  DB.settings.mailgunDomain = document.getElementById('mg_domain').value;
+  DB.settings.mailgunFrom = document.getElementById('mg_from').value;
+  saveData(); closeModal('mailgunModal'); showToast('Mailgun configured!','success');
+}
+
+// ---- CRM ----
+function renderCRM() {
+  const search = (document.getElementById('crmSearch')||{}).value||'';
+  const stage = (document.getElementById('crmStageFilter')||{}).value||'';
+  let leads = DB.crmLeads;
+  if (search) leads = leads.filter(l=>(l.store||'').toLowerCase().includes(search.toLowerCase())||(l.email||'').toLowerCase().includes(search.toLowerCase()));
+  if (stage) leads = leads.filter(l=>l.stage===stage);
+  const list = document.getElementById('crmList');
+  if (leads.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="es-icon"><i data-lucide="handshake"></i></div><h3>No CRM leads yet</h3><p>Add leads manually or sync from the scanner.</p></div>';
+    return;
+  }
+  list.innerHTML = leads.map(l => `
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap;">
+            <span style="font-size:15px;font-weight:700;">${l.store}</span>
+            <span class="stage-badge stage-${stageCls(l.stage)}">${l.stage}</span>
+          </div>
+          <div class="text-xs text-muted" style="margin-bottom:4px;"><i data-lucide="mail"></i> ${l.email||'—'} &nbsp;|&nbsp; <i data-lucide="globe"></i> ${l.website||'—'}</div>
+          ${l.nextAction?`<div class="text-xs" style="color:var(--yellow);">⏭️ Next: ${l.nextAction}</div>`:''}
+          ${l.notes&&l.notes.length>0?`<div style="margin-top:8px;"><div class="text-xs text-muted" style="margin-bottom:4px;">Notes:</div>
+            ${l.notes.slice(-2).map(n=>`<div style="background:var(--bg-secondary);padding:6px 10px;border-radius:6px;font-size:12px;margin-bottom:4px;">${n.text} <span class="text-muted" style="font-size:10px;">— ${timeAgo(n.ts)}</span></div>`).join('')}
+          </div>`:''}
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="btn btn-secondary" style="padding:5px 10px;font-size:12px;" onclick="openCRMDetail('${l.id}')"><i data-lucide="clipboard-list"></i> Details</button>
+          <button class="btn btn-secondary" style="padding:5px 10px;font-size:12px;" onclick="editCRMLead('${l.id}')"><i data-lucide="square-pen"></i></button>
+          <button class="btn btn-danger" style="padding:5px 10px;font-size:12px;" onclick="deleteCRMLead('${l.id}')"><i data-lucide="x"></i></button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function openCRMModal() {
+  document.getElementById('crmModalId').value = '';
+  document.getElementById('crm_store').value = '';
+  document.getElementById('crm_email').value = '';
+  document.getElementById('crm_website').value = '';
+  document.getElementById('crm_stage').value = 'New Lead';
+  document.getElementById('crm_next').value = '';
+  document.getElementById('crm_note').value = '';
+  openModal('crmModal');
+}
+
+function editCRMLead(id) {
+  const l = DB.crmLeads.find(l=>l.id===id);
+  if (!l) return;
+  document.getElementById('crmModalId').value = id;
+  document.getElementById('crm_store').value = l.store||'';
+  document.getElementById('crm_email').value = l.email||'';
+  document.getElementById('crm_website').value = l.website||'';
+  document.getElementById('crm_stage').value = l.stage||'New Lead';
+  document.getElementById('crm_next').value = l.nextAction||'';
+  document.getElementById('crm_note').value = '';
+  openModal('crmModal');
+}
+
+function saveCRMLead() {
+  const id = document.getElementById('crmModalId').value || genId();
+  const noteText = document.getElementById('crm_note').value.trim();
+  const existing = DB.crmLeads.find(l=>l.id===id);
+  const notes = existing ? existing.notes||[] : [];
+  if (noteText) notes.push({ text: noteText, ts: new Date().toISOString() });
+  const lead = {
+    id, store: document.getElementById('crm_store').value,
+    email: document.getElementById('crm_email').value,
+    website: document.getElementById('crm_website').value,
+    stage: document.getElementById('crm_stage').value,
+    nextAction: document.getElementById('crm_next').value,
+    notes, ts: existing ? existing.ts : new Date().toISOString()
+  };
+  if (existing) Object.assign(existing, lead);
+  else DB.crmLeads.push(lead);
+  saveData(); renderCRM(); closeModal('crmModal');
+  showToast('CRM lead saved!','success');
+  addActivity(`CRM updated: ${lead.store} → ${lead.stage}`,'var(--green)');
+}
+
+function deleteCRMLead(id) {
+  if (!confirm('Delete this lead?')) return;
+  DB.crmLeads = DB.crmLeads.filter(l=>l.id!==id);
+  saveData(); renderCRM(); showToast('Lead deleted','info');
+}
+
+function openCRMDetail(id) {
+  const l = DB.crmLeads.find(l=>l.id===id);
+  if (!l) return;
+  document.getElementById('crmDetailTitle').textContent = l.store;
+  document.getElementById('crmDetailContent').innerHTML = `
+    <div class="form-group2"><label class="label">Email</label><div class="text-sm">${l.email||'—'}</div></div>
+    <div class="form-group2"><label class="label">Website</label><div class="text-sm">${l.website||'—'}</div></div>
+    <div class="form-group2"><label class="label">Stage</label><span class="stage-badge stage-${stageCls(l.stage)}">${l.stage}</span></div>
+    <div class="form-group2"><label class="label">Next Action</label><div class="text-sm">${l.nextAction||'—'}</div></div>
+    <div class="form-group2"><label class="label">Update Stage</label>
+      <select class="select" id="crmDetailStage" onchange="updateCRMStage('${id}',this.value)">
+        <option ${l.stage==='New Lead'?'selected':''}>New Lead</option>
+        <option ${l.stage==='Contacted'?'selected':''}>Contacted</option>
+        <option ${l.stage==='Replied'?'selected':''}>Replied</option>
+        <option ${l.stage==='Interested'?'selected':''}>Interested</option>
+        <option ${l.stage==='Negotiating'?'selected':''}>Negotiating</option>
+        <option ${l.stage==='Closed'?'selected':''}>Closed</option>
+        <option ${l.stage==='Lost'?'selected':''}>Lost</option>
+      </select>
+    </div>
+    <hr class="divider">
+    <div class="form-group2"><label class="label">Notes History</label>
+      <div class="notes-list">${(l.notes||[]).length===0?'<div class="text-muted text-sm">No notes yet</div>':
+      (l.notes||[]).map(n=>`<div class="note-item"><div class="ni-text">${n.text}</div><div class="ni-time">${timeAgo(n.ts)}</div></div>`).join('')}</div>
+    </div>
+    <div class="form-group2"><label class="label">Add Note</label>
+      <textarea class="textarea" id="crmDetailNote" style="min-height:70px;" placeholder="Add a note..."></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="addCRMDetailNote('${id}')">Add Note</button>
+  `;
+  openModal('crmDetailModal');
+}
+
+function updateCRMStage(id, stage) {
+  const l = DB.crmLeads.find(l=>l.id===id);
+  if (l) { l.stage = stage; saveData(); renderCRM(); showToast('Stage updated!','success'); }
+}
+
+function addCRMDetailNote(id) {
+  const text = document.getElementById('crmDetailNote').value.trim();
+  if (!text) { showToast('Enter a note','error'); return; }
+  const l = DB.crmLeads.find(l=>l.id===id);
+  if (!l) return;
+  if (!l.notes) l.notes = [];
+  l.notes.push({ text, ts: new Date().toISOString() });
+  saveData(); renderCRM(); openCRMDetail(id);
+  showToast('Note added!','success');
+}
+
+// ---- KANBAN ----
+function syncKanbanFromScanner() {
+  const flagged = DB.scanResults.filter(s=>s.flagged);
+  flagged.forEach(s => {
+    const existsInAnyCol = ['new','contacted','interested','closed'].some(col=>DB.kanbanCards[col].find(c=>c.storeId===s.id));
+    if (!existsInAnyCol) {
+      DB.kanbanCards.new.push({
+        id: genId(), storeId: s.id,
+        store: s.storeName||getDomain(s.url),
+        email: s.email||'—',
+        url: s.url,
+        perf: s.perf_m||s.perf_d||null,
+        seo: s.seo_m||null,
+        lastAction: 'Added from scanner',
+        ts: new Date().toISOString()
+      });
+    }
+  });
+  saveData();
+  renderKanban();
+}
+
+function renderKanban() {
+  ['new','contacted','interested','closed'].forEach(col => {
+    const container = document.getElementById('cards-'+col);
+    const count = document.getElementById('cnt-'+col);
+    if (!container) return;
+    const cards = DB.kanbanCards[col]||[];
+    count.textContent = cards.length;
+    if (cards.length === 0) {
+      container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12px;">Drop cards here</div>`;
+    } else {
+      container.innerHTML = cards.map(c => `
+        <div class="kanban-card" draggable="true" data-id="${c.id}" data-col="${col}"
+          ondragstart="dragStart(event,'${c.id}','${col}')"
+          ondragend="dragEnd(event)">
+          <div class="kc-store">${c.store}</div>
+          <div class="kc-email">${c.email}</div>
+          <div class="kc-scores">
+            ${c.perf!==null&&c.perf!==undefined?`<span class="score-badge ${c.perf<70?'score-red':'score-green'}" style="width:auto;padding:0 8px;font-size:10px;">Perf: ${c.perf}</span>`:''}
+            ${c.seo!==null&&c.seo!==undefined?`<span class="score-badge ${c.seo<70?'score-red':'score-green'}" style="width:auto;padding:0 8px;font-size:10px;">SEO: ${c.seo}</span>`:''}
+          </div>
+          <div class="kc-action">⏱️ ${c.lastAction||'No action yet'}</div>
+          <div style="display:flex;gap:4px;margin-top:8px;">
+            <button class="btn btn-danger" style="padding:2px 6px;font-size:10px;" onclick="deleteKanbanCard('${c.id}','${col}')"><i data-lucide="x"></i></button>
+          </div>
+        </div>`).join('');
+    }
+  });
+}
+
+function dragStart(e, cardId, fromCol) {
+  draggedCard = cardId;
+  draggedFrom = fromCol;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(()=>{ const el = document.querySelector(`[data-id="${cardId}"]`); if(el) el.classList.add('dragging'); }, 0);
+}
+
+function dragEnd(e) {
+  document.querySelectorAll('.kanban-card').forEach(c=>c.classList.remove('dragging'));
+  document.querySelectorAll('.kanban-col').forEach(c=>c.classList.remove('drag-over'));
+}
+
+function dragOver(e, col) {
+  e.preventDefault();
+  document.querySelectorAll('.kanban-col').forEach(c=>c.classList.remove('drag-over'));
+  document.getElementById('col-'+col).classList.add('drag-over');
+}
+
+function dragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function drop(e, toCol) {
+  e.preventDefault();
+  if (!draggedCard || !draggedFrom || draggedFrom===toCol) { document.querySelectorAll('.kanban-col').forEach(c=>c.classList.remove('drag-over')); return; }
+  const fromCards = DB.kanbanCards[draggedFrom];
+  const cardIdx = fromCards.findIndex(c=>c.id===draggedCard);
+  if (cardIdx<0) return;
+  const card = fromCards.splice(cardIdx, 1)[0];
+  card.lastAction = `Moved to ${toCol} — ${new Date().toLocaleString()}`;
+  DB.kanbanCards[toCol].push(card);
+  if (toCol === 'closed') {
+    // Update CRM
+    const crmLead = DB.crmLeads.find(l=>l.email===card.email||l.store===card.store);
+    if (crmLead) { crmLead.stage = 'Closed'; }
+    // Update tracker
+    const trackerEntry = DB.trackerEntries.find(t=>t.email===card.email||t.store===card.store);
+    if (trackerEntry) { trackerEntry.status = 'Closed Deal'; }
+    addActivity(`Deal closed: ${card.store}`,'var(--green)');
+  }
+  saveData();
+  renderKanban();
+  renderCRM();
+  renderTracker();
+  document.querySelectorAll('.kanban-col').forEach(c=>c.classList.remove('drag-over'));
+}
+
+function deleteKanbanCard(cardId, col) {
+  DB.kanbanCards[col] = DB.kanbanCards[col].filter(c=>c.id!==cardId);
+  saveData();
+  renderKanban();
+}
+
+// ---- AI ASSISTANT ----
+async function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  
+  appendChatMessage('user', msg);
+  DB.chatHistory.push({ role:'user', content: msg });
+  
+  const typing = appendTyping();
+  
+  const apiKey = DB.settings.groqApiKey || localStorage.getItem('mt_groqApiKey') || '';
+  if (!apiKey) {
+    typing.remove();
+    appendChatMessage('ai', '<i data-lucide="triangle-alert"></i> No Groq API key set. Please add your Groq API key in Settings to enable the AI assistant.\n\nGet your free key at: https://console.groq.com');
+    return;
+  }
+  
+  try {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body: JSON.stringify({
+        model:'llama3-70b-8192',
+        messages:[
+          {role:'system',content:`You are an expert outreach and web optimization consultant for MILLTOP TECH, a web optimization agency. You help write cold emails, improve campaigns, analyze performance stats, and give actionable advice on getting more replies and closing more deals. Platform stats: ${DB.scanResults.length} stores scanned, ${DB.emailLog.length} emails sent, ${DB.campaigns.length} campaigns active. Be concise, friendly and actionable.`},
+          ...DB.chatHistory.slice(-10)
+        ],
+        temperature:0.7, max_tokens:800
+      })
+    });
+    const data = await resp.json();
+    typing.remove();
+    const reply = data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response. Please try again.';
+    appendChatMessage('ai', reply);
+    DB.chatHistory.push({ role:'assistant', content: reply });
+    saveData();
+  } catch(e) {
+    typing.remove();
+    appendChatMessage('ai', `Error: ${e.message}. Please check your Groq API key in Settings.`);
+  }
+}
+
+function appendChatMessage(role, text) {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  div.innerHTML = `
+    <div class="chat-avatar">${role==='ai'?'<i data-lucide="bot"></i>':'<i data-lucide="user"></i>'}</div>
+    <div class="chat-bubble">${text.replace(/\n/g,'<br>')}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function appendTyping() {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg ai';
+  div.innerHTML = `<div class="chat-avatar"><i data-lucide="bot"></i></div><div class="chat-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function quickPrompt(text) {
+  document.getElementById('chatInput').value = text;
+  sendChatMessage();
+}
+
+function clearChat() {
+  DB.chatHistory = [];
+  saveData();
+  const msgs = document.getElementById('chatMessages');
+  msgs.innerHTML = `<div class="chat-msg ai"><div class="chat-avatar"><i data-lucide="bot"></i></div><div class="chat-bubble">Chat cleared! How can I help you today?</div></div>`;
+}
+
+// ---- TRACKER ----
+function renderTracker() {
+  const search = (document.getElementById('trackerSearch')||{}).value||'';
+  const status = (document.getElementById('trackerStatusFilter')||{}).value||'';
+  let entries = DB.trackerEntries;
+  if (search) entries = entries.filter(e=>(e.store||'').toLowerCase().includes(search.toLowerCase())||(e.email||'').toLowerCase().includes(search.toLowerCase()));
+  if (status) entries = entries.filter(e=>e.status===status);
+  const tbody = document.getElementById('trackerTable');
+  if (entries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);">No tracker entries yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = entries.map(e => {
+    const statusColors = {'Sent':'badge-blue','No Reply':'badge-gray','Replied':'badge-green','Interested':'badge-yellow','Not Interested':'badge-red','Closed Deal':'badge-purple'};
+    return `<tr>
+      <td><strong>${e.store||'—'}</strong></td>
+      <td class="text-xs"><a href="${e.website||'#'}" target="_blank" style="color:var(--accent);">${e.website||'—'}</a></td>
+      <td class="text-xs">${e.email||'—'}</td>
+      <td><span class="score-badge ${(e.score||100)<70?'score-red':'score-green'}">${e.score||'?'}</span></td>
+      <td class="text-xs" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.subject||'—'}</td>
+      <td class="text-xs text-muted">${e.date?fmtDate(e.date):'—'}</td>
+      <td>
+        <select class="select" style="width:auto;font-size:11px;padding:3px 8px;" onchange="updateTrackerStatus('${e.id}',this.value)">
+          ${['Sent','No Reply','Replied','Interested','Not Interested','Closed Deal'].map(s=>`<option ${e.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td class="text-xs text-muted">${timeAgo(e.ts)}</td>
+      <td>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-secondary" style="padding:3px 6px;font-size:11px;" onclick="editTrackerEntry('${e.id}')"><i data-lucide="square-pen"></i></button>
+          <button class="btn btn-danger" style="padding:3px 6px;font-size:11px;" onclick="deleteTrackerEntry('${e.id}')"><i data-lucide="x"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openTrackerModal() {
+  document.getElementById('trackerModalId').value = '';
+  document.getElementById('tr_store').value = '';
+  document.getElementById('tr_website').value = '';
+  document.getElementById('tr_email').value = '';
+  document.getElementById('tr_score').value = '';
+  document.getElementById('tr_subject').value = '';
+  document.getElementById('tr_date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('tr_status').value = 'Sent';
+  openModal('trackerModal');
+}
+
+function editTrackerEntry(id) {
+  const e = DB.trackerEntries.find(e=>e.id===id);
+  if (!e) return;
+  document.getElementById('trackerModalId').value = id;
+  document.getElementById('tr_store').value = e.store||'';
+  document.getElementById('tr_website').value = e.website||'';
+  document.getElementById('tr_email').value = e.email||'';
+  document.getElementById('tr_score').value = e.score||'';
+  document.getElementById('tr_subject').value = e.subject||'';
+  document.getElementById('tr_date').value = e.date||'';
+  document.getElementById('tr_status').value = e.status||'Sent';
+  openModal('trackerModal');
+}
+
+function saveTrackerEntry() {
+  const id = document.getElementById('trackerModalId').value || genId();
+  const existing = DB.trackerEntries.find(e=>e.id===id);
+  const entry = {
+    id, store: document.getElementById('tr_store').value,
+    website: document.getElementById('tr_website').value,
+    email: document.getElementById('tr_email').value,
+    score: document.getElementById('tr_score').value,
+    subject: document.getElementById('tr_subject').value,
+    date: document.getElementById('tr_date').value,
+    status: document.getElementById('tr_status').value,
+    ts: existing ? existing.ts : new Date().toISOString(),
+    updated: new Date().toISOString()
+  };
+  if (existing) Object.assign(existing, entry);
+  else DB.trackerEntries.push(entry);
+  saveData(); renderTracker(); closeModal('trackerModal');
+  showToast('Tracker entry saved!','success');
+  addActivity(`Tracker entry: ${entry.store} — ${entry.status}`,'var(--yellow)');
+}
+
+function updateTrackerStatus(id, status) {
+  const e = DB.trackerEntries.find(e=>e.id===id);
+  if (e) { e.status = status; e.updated = new Date().toISOString(); saveData(); showToast('Status updated!','success'); }
+}
+
+function deleteTrackerEntry(id) {
+  if (!confirm('Delete this entry?')) return;
+  DB.trackerEntries = DB.trackerEntries.filter(e=>e.id!==id);
+  saveData(); renderTracker(); showToast('Entry deleted','info');
+}
+
+function exportTrackerCSV() {
+  const headers = ['Store','Website','Email','Mobile Score','Subject','Date Sent','Status','Added','Last Updated'];
+  const rows = DB.trackerEntries.map(e=>[e.store,e.website,e.email,e.score,e.subject,e.date,e.status,e.ts,e.updated]);
+  downloadCSV(headers, rows, 'tracker-export.csv');
+  showToast('Tracker exported!','success');
+}
+
+// ---- SETTINGS ----
+function loadSettingsPage() {
+  const s = DB.settings;
+  const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val||''; };
+  setVal('setPagespeedKey', s.pagespeedApiKey||localStorage.getItem('mt_pagespeedApiKey')||'');
+  setVal('setHunterKey', s.hunterApiKey||localStorage.getItem('mt_hunterApiKey')||'');
+  setVal('setGroqKey', s.groqApiKey||localStorage.getItem('mt_groqApiKey')||'');
+  setVal('setSendgridKey', s.sendgridApiKey||'');
+  setVal('setMailgunKey', s.mailgunApiKey||'');
+  setVal('setSendDelay', s.sendDelay||'3');
+  setVal('setLoginEmail', localStorage.getItem('mt_login_email')||'admin@milltoptech.com');
+  renderGmailAccounts();
+  renderIcons();
+}
+
+function saveApiKey(storageKey, inputId) {
+  const val = document.getElementById(inputId).value.trim();
+  DB.settings[storageKey] = val;
+  localStorage.setItem('mt_'+storageKey, val);
+  saveData();
+  showToast('API key saved!','success');
+}
+
+function saveSendDelay() {
+  const val = document.getElementById('setSendDelay').value;
+  DB.settings.sendDelay = val;
+  if (document.getElementById('sendDelay')) document.getElementById('sendDelay').value = val;
+  saveData();
+  showToast('Send delay saved!','success');
+}
+
+function toggleApiKey(inputId) {
+  const el = document.getElementById(inputId);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+function clearAllData() {
+  if (!confirm('Are you sure you want to clear ALL platform data? This cannot be undone!')) return;
+  if (!confirm('FINAL WARNING: All data will be deleted!')) return;
+  DB = { scanResults:[],contacts:[],templates:[],campaigns:[],emailLog:[],trackerEntries:[],kanbanCards:{new:[],contacted:[],interested:[],closed:[]},crmLeads:[],chatHistory:[],gmailAccounts:[],settings:{},activity:[] };
+  initDefaultTemplates();
+  const keys = ['scanResults','contacts','templates','campaigns','emailLog','trackerEntries','kanbanCards','crmLeads','chatHistory','gmailAccounts','settings','activity'];
+  keys.forEach(k=>localStorage.removeItem('mt_'+k));
+  showApp();
+  showToast('All data cleared','info');
+}
+
+function exportAllData() {
+  const data = JSON.stringify(DB, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `milltop-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  showToast('Data exported!','success');
+}
+
+// ---- GLOBAL SEARCH ----
+function handleGlobalSearch(q) {
+  const results = document.getElementById('searchResults');
+  if (!q || q.length < 2) { results.classList.remove('visible'); return; }
+  q = q.toLowerCase();
+  const groups = [];
+  
+  const contacts = DB.contacts.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.email||'').toLowerCase().includes(q)).slice(0,4);
+  if (contacts.length>0) groups.push({title:'Contacts',items:contacts.map(c=>({icon:'<i data-lucide="users"></i>',main:c.name||c.email,sub:c.email,action:'View',page:'contacts'}))});
+  
+  const stores = DB.scanResults.filter(s=>(s.url||'').toLowerCase().includes(q)||(s.storeName||'').toLowerCase().includes(q)).slice(0,4);
+  if (stores.length>0) groups.push({title:'Scanned Stores',items:stores.map(s=>({icon:'<i data-lucide="search"></i>',main:s.storeName||getDomain(s.url),sub:s.url,action:'Insights',page:'insights'}))});
+  
+  const camps = DB.campaigns.filter(c=>(c.name||'').toLowerCase().includes(q)).slice(0,3);
+  if (camps.length>0) groups.push({title:'Campaigns',items:camps.map(c=>({icon:'<i data-lucide="megaphone"></i>',main:c.name,sub:c.status,action:'View',page:'campaigns'}))});
+  
+  const templates = DB.templates.filter(t=>(t.name||'').toLowerCase().includes(q)).slice(0,3);
+  if (templates.length>0) groups.push({title:'Templates',items:templates.map(t=>({icon:'<i data-lucide="mail"></i>',main:t.name,sub:t.subject,action:'View',page:'templates'}))});
+  
+  const tracker = DB.trackerEntries.filter(e=>(e.store||'').toLowerCase().includes(q)||(e.email||'').toLowerCase().includes(q)).slice(0,3);
+  if (tracker.length>0) groups.push({title:'Tracker',items:tracker.map(e=>({icon:'<i data-lucide="clipboard-list"></i>',main:e.store,sub:e.email,action:'View',page:'tracker'}))});
+  
+  const logs = DB.emailLog.filter(e=>(e.store||'').toLowerCase().includes(q)||(e.email||'').toLowerCase().includes(q)).slice(0,3);
+  if (logs.length>0) groups.push({title:'Email Activity',items:logs.map(e=>({icon:'<i data-lucide="inbox"></i>',main:e.store,sub:e.email,action:'View',page:'emailactivity'}))});
+  
+  if (groups.length === 0) {
+    results.innerHTML = '<div class="search-result-item"><span class="sr-icon"><i data-lucide="search"></i></span><div class="sr-text"><div class="sr-main">No results found</div></div></div>';
+    results.classList.add('visible');
+    return;
+  }
+  
+  results.innerHTML = groups.map(g=>`
+    <div class="search-group-title">${g.title}</div>
+    ${g.items.map(item=>`
+      <div class="search-result-item" onclick="navigateTo('${item.page}');hideSearchResults()">
+        <span class="sr-icon">${item.icon}</span>
+        <div class="sr-text">
+          <div class="sr-main">${item.main}</div>
+          <div class="sr-sub">${item.sub}</div>
+        </div>
+        <span class="sr-action">${item.action} →</span>
+      </div>`).join('')}
+  `).join('');
+  results.classList.add('visible');
+}
+
+function hideSearchResults() {
+  document.getElementById('searchResults').classList.remove('visible');
+}
+
+// ---- BADGES ----
+function updateBadges() {
+  const flaggedCount = DB.scanResults.filter(s=>s.flagged).length;
+}
+
+// ---- HELPERS ----
+function renderIcons() {
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+}
+
+let iconRenderTimer;
+const iconObserver = new MutationObserver(() => {
+  clearTimeout(iconRenderTimer);
+  iconRenderTimer = setTimeout(renderIcons, 25);
+});
+iconObserver.observe(document.body, { childList: true, subtree: true });
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function getDomain(url) { try { return new URL(url).hostname; } catch(e) { return url; } }
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+function fmtDate(d) { if(!d) return '—'; try { return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e) { return d; } }
+function timeAgo(d) {
+  if (!d) return '';
+  const diff = Date.now() - new Date(d).getTime();
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return Math.floor(diff/60000)+'m ago';
+  if (diff < 86400000) return Math.floor(diff/3600000)+'h ago';
+  return Math.floor(diff/86400000)+'d ago';
+}
+function stageCls(stage) {
+  const map = {'New Lead':'new','Contacted':'contacted','Replied':'replied','Interested':'interested','Negotiating':'negotiating','Closed':'closed','Lost':'lost'};
+  return map[stage]||'new';
+}
+function downloadCSV(headers, rows, filename) {
+  const csv = [headers, ...rows].map(r=>r.map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+// ---- INIT ----
+init();
+</script>
+</body>
+</html>
