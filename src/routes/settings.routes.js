@@ -5,7 +5,6 @@ const { requireAuth } = require('../middleware/auth');
 const asyncHandler = require('../utils/asyncHandler');
 const { validate } = require('../utils/validation');
 const { getSettings } = require('../services/settings.service');
-
 const router = express.Router();
 router.use(requireAuth);
 
@@ -16,6 +15,10 @@ router.get('/', asyncHandler(async (req, res) => {
       pagespeed_api_key: null,
       hunter_api_key: null,
       groq_api_key: null,
+      sendgrid_api_key: null,
+      mailgun_api_key: null,
+      mailgun_domain: null,
+      mailgun_from: null,
       gmail_accounts: []
     }
   });
@@ -26,16 +29,26 @@ router.post('/',
   validate,
   asyncHandler(async (req, res) => {
     const { rows } = await db.query(
-      `INSERT INTO user_settings (user_id, pagespeed_api_key, hunter_api_key, groq_api_key, gmail_accounts)
-       VALUES ($1,$2,$3,$4,$5)
-       ON CONFLICT (user_id)
-       DO UPDATE SET pagespeed_api_key=$2, hunter_api_key=$3, groq_api_key=$4, gmail_accounts=$5, updated_at=NOW()
-       RETURNING *`,
+      `INSERT INTO user_settings (
+        user_id, pagespeed_api_key, hunter_api_key, groq_api_key,
+        sendgrid_api_key, mailgun_api_key, mailgun_domain, mailgun_from, gmail_accounts
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      ON CONFLICT (user_id)
+      DO UPDATE SET
+        pagespeed_api_key=$2, hunter_api_key=$3, groq_api_key=$4,
+        sendgrid_api_key=$5, mailgun_api_key=$6, mailgun_domain=$7,
+        mailgun_from=$8, gmail_accounts=$9, updated_at=NOW()
+      RETURNING *`,
       [
         req.user.id,
         req.body.pagespeedApiKey || null,
         req.body.hunterApiKey || null,
         req.body.groqApiKey || null,
+        req.body.sendgridApiKey || null,
+        req.body.mailgunApiKey || null,
+        req.body.mailgunDomain || null,
+        req.body.mailgunFrom || null,
         JSON.stringify(req.body.gmailAccounts || [])
       ]
     );
