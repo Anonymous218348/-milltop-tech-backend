@@ -21,6 +21,10 @@ router.post('/register',
   validate,
   asyncHandler(async (req, res) => {
     const { email, password } = req.body;
+    const allowedEmail = process.env.ALLOWED_EMAIL;
+    if (allowedEmail && email !== allowedEmail) {
+      throw new HttpError(403, 'Registration is restricted');
+    }
     const hashed = await bcrypt.hash(password, 12);
     try {
       const { rows } = await db.query(
@@ -41,6 +45,10 @@ router.post('/login',
   validate,
   asyncHandler(async (req, res) => {
     const { email, password } = req.body;
+    const allowedEmail = process.env.ALLOWED_EMAIL;
+    if (allowedEmail && email !== allowedEmail) {
+      throw new HttpError(401, 'Access restricted');
+    }
     const { rows } = await db.query('SELECT id, email, password, created_at FROM users WHERE email = $1', [email]);
     const user = rows[0];
     if (!user || !(await bcrypt.compare(password, user.password))) {
