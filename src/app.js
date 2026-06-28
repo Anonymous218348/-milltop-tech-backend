@@ -38,6 +38,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.set('trust proxy', 1);
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 500,
