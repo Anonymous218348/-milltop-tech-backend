@@ -4,6 +4,15 @@ const { normalizeUrl, domainFromUrl } = require('../utils/url');
 
 const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 
+const isImageFile = (email) => {
+  const lower = email.toLowerCase();
+  return /\.(png|jpg|jpeg|gif|webp|svg|ico|bmp|tiff|avif)([@x]|$)/.test(lower) ||
+         /@[0-9]+x\./.test(lower) ||
+         /[0-9]+x@/.test(lower) ||
+         lower.includes('retina') ||
+         /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}/.test(lower); // UUID in email = fake
+};
+
 const SKIP_DOMAINS = ['sentry.io','wixpress.com','shopify.com','example.com','githubusercontent.com','cloudflare.com','google.com','facebook.com','twitter.com','instagram.com','tiktok.com','youtube.com','amazon.com'];
 const SKIP_LOCALS = ['noreply','no-reply','webmaster','postmaster','mailer-daemon','bounce','donotreply','do-not-reply','unsubscribe','abuse','spam'];
 
@@ -12,6 +21,10 @@ const PREFERRED_LOCALS = ['hello','hi','contact','sales','team','founder','owner
 const isValidEmail = (email) => {
   const [local, domain] = email.toLowerCase().split('@');
   if (!domain) return false;
+  if (isImageFile(email)) return false;
+  if (!/^[a-zA-Z0-9._%+-]+$/.test(local)) return false; // reject weird local parts
+  if (local.length > 50) return false;
+  if (!/\.[a-zA-Z]{2,}$/.test(domain)) return false; // must end with proper TLD
   if (SKIP_DOMAINS.some(d => domain.includes(d))) return false;
   if (SKIP_LOCALS.some(s => local === s)) return false;
   if (email.length > 80) return false;
