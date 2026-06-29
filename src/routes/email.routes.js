@@ -59,5 +59,25 @@ router.get('/logs', asyncHandler(async (req, res) => {
   const { rows } = await db.query('SELECT * FROM email_logs WHERE user_id=$1 ORDER BY COALESCE(sent_at, NOW()) DESC', [req.user.id]);
   res.json({ logs: rows });
 }));
+router.post('/log',
+  body('toEmail').isEmail().normalizeEmail(),
+  body('subject').notEmpty(),
+  validate,
+  asyncHandler(async (req, res) => {
+    const { rows } = await db.query(
+      `INSERT INTO email_logs (user_id, subject, status, store_name, provider, sent_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
+       RETURNING *`,
+      [
+        req.user.id,
+        req.body.subject,
+        req.body.status || 'Sent',
+        req.body.storeName || null,
+        req.body.provider || null
+      ]
+    );
+    res.status(201).json({ log: rows[0] });
+  })
+);
 
 module.exports = router;
