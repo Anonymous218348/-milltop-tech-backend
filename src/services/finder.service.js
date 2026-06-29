@@ -4,31 +4,37 @@ const { normalizeUrl, domainFromUrl } = require('../utils/url');
 
 const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 
+const SKIP_DOMAINS = ['sentry.io','wixpress.com','shopify.com','shopifycdn.com','shopifyemails.com',
+  'example.com','githubusercontent.com','cloudflare.com','google.com','facebook.com',
+  'twitter.com','instagram.com','tiktok.com','youtube.com','amazon.com','klaviyo.com',
+  'mailchimp.com','gorgias.com','zendesk.com','intercom.io','freshdesk.com'];
+
+const SKIP_LOCALS = ['noreply','no-reply','webmaster','postmaster','mailer-daemon','bounce',
+  'donotreply','do-not-reply','unsubscribe','abuse','spam','privacy','legal','dmca',
+  'billing','invoice','orders','notifications','alerts','newsletter'];
+
+const PREFERRED_LOCALS = ['hello','hi','contact','sales','team','founder','owner','ceo',
+  'director','marketing','partnerships','press','media','info','enquiries','enquiry',
+  'shop','store','support','help','service','customer'];
+
 const isImageFile = (email) => {
   const lower = email.toLowerCase();
-  return /\.(png|jpg|jpeg|gif|webp|svg|ico|bmp|tiff|avif)([@x]|$)/.test(lower) ||
+  return /\.(png|jpg|jpeg|gif|webp|svg|ico|bmp|tiff|avif)/.test(lower) ||
          /@[0-9]+x\./.test(lower) ||
          /[0-9]+x@/.test(lower) ||
-         lower.includes('retina') ||
-         /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}/.test(lower); // UUID in email = fake
+         /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}/.test(lower);
 };
-
-const SKIP_DOMAINS = ['sentry.io','wixpress.com','shopify.com','example.com','githubusercontent.com','cloudflare.com','google.com','facebook.com','twitter.com','instagram.com','tiktok.com','youtube.com','amazon.com'];
-const SKIP_LOCALS = ['noreply','no-reply','webmaster','postmaster','mailer-daemon','bounce','donotreply','do-not-reply','unsubscribe','abuse','spam'];
-
-const PREFERRED_LOCALS = ['hello','hi','contact','sales','team','founder','owner','ceo','director','marketing','partnerships','press','media','info','enquiries','enquiry','orders','shop'];
 
 const isValidEmail = (email) => {
   const [local, domain] = email.toLowerCase().split('@');
   if (!domain) return false;
   if (isImageFile(email)) return false;
-  if (!/^[a-zA-Z0-9._%+-]+$/.test(local)) return false; // reject weird local parts
+  if (!/^[a-zA-Z0-9._%+-]+$/.test(local)) return false;
   if (local.length > 50) return false;
-  if (!/\.[a-zA-Z]{2,}$/.test(domain)) return false; // must end with proper TLD
+  if (!/\.[a-zA-Z]{2,}$/.test(domain)) return false;
   if (SKIP_DOMAINS.some(d => domain.includes(d))) return false;
-  if (SKIP_LOCALS.some(s => local === s)) return false;
+  if (SKIP_LOCALS.includes(local)) return false;
   if (email.length > 80) return false;
-  if (local.includes('example')) return false;
   return true;
 };
 
@@ -62,24 +68,22 @@ const extractEmailsFromHtml = (html) => {
 
   const found = [];
 
-  // 1. mailto links — most reliable
+  // 1. mailto links
   $('a[href^="mailto:"]').each((_, el) => {
     const raw = $(el).attr('href').replace(/^mailto:/i, '').split('?')[0].trim();
     if (raw && raw.includes('@')) found.push(raw);
   });
 
-  // 2. Visible text
-  const bodyText = $('body').text();
-  found.push(...(bodyText.match(emailRegex) || []));
+  // 2. Body text
+  found.push(...($('body').text().match(emailRegex) || []));
 
-  // 3. Full HTML source (catches obfuscated/hidden emails)
+  // 3. Full HTML source
   found.push(...(html.match(emailRegex) || []));
 
-  // 4. JSON-LD schema markup
+  // 4. JSON-LD schema
   $('script[type="application/ld+json"]').each((_, el) => {
     try {
-      const str = JSON.stringify(JSON.parse($(el).html()));
-      found.push(...(str.match(emailRegex) || []));
+      found.push(...(JSON.stringify(JSON.parse($(el).html())).match(emailRegex) || []));
     } catch {}
   });
 
@@ -90,41 +94,142 @@ const extractEmailsFromHtml = (html) => {
   });
 
   // 6. Data attributes
-  $('[data-email]').each((_, el) => {
-    const email = $(el).attr('data-email');
-    if (email && email.includes('@')) found.push(email);
+  $('[data-email],[data-contact],[data-owner]').each((_, el) => {
+    ['data-email','data-contact','data-owner'].forEach(attr => {
+      const val = $(el).attr(attr);
+      if (val && val.includes('@')) found.push(val);
+    });
   });
 
   return found;
 };
 
+// Extract emails from Shopify sitemap to find hidden pages
+const getSitemapPages = async (baseUrl) => {
+  try {
+    const { data } = await axios.get(baseUrl + '/sitemap.xml', { timeout: 8000 });
+    const matches = data.match(/<loc>(.*?)<\/loc>/g) || [];
+    return matches
+      .map(m => m.replace(/<\/?loc>/g, '').trim())
+      .filter(url => 
+        url.includes('/pages/') || 
+        url.includes('/contact') || 
+        url.includes('/about')
+      )
+      .slice(0, 10);
+  } catch {
+    return [];
+  }
+};
+
+// Check security.txt
+const getSecurityTxt = async (baseUrl) => {
+  const urls = [
+    baseUrl + '/.well-known/security.txt',
+    baseUrl + '/security.txt'
+  ];
+  for (const url of urls) {
+    try {
+      const { data } = await axios.get(url, { timeout: 5000 });
+      const emails = data.match(emailRegex) || [];
+      if (emails.length > 0) return emails;
+    } catch {}
+  }
+  return [];
+};
+
+// Shopify-specific: get store email from contact form page source
+const getShopifyContactEmail = async (baseUrl) => {
+  try {
+    const html = await fetchPage(baseUrl + '/pages/contact');
+    if (!html) return [];
+    const $ = cheerio.load(html);
+    const found = [];
+    
+    // Check form action
+    $('form').each((_, el) => {
+      const action = $(el).attr('action') || '';
+      const matches = action.match(emailRegex) || [];
+      found.push(...matches);
+    });
+
+    // Check for email in Shopify theme settings embedded in page
+    const themeMatch = html.match(/"email"\s*:\s*"([^"]+@[^"]+)"/);
+    if (themeMatch) found.push(themeMatch[1]);
+
+    // Check contact_email in page source
+    const contactMatch = html.match(/contact_email['":\s]+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+    if (contactMatch) found.push(contactMatch[1]);
+
+    return found;
+  } catch {
+    return [];
+  }
+};
+
+// Check robots.txt for sitemap and useful paths
+const getRobotsPaths = async (baseUrl) => {
+  try {
+    const { data } = await axios.get(baseUrl + '/robots.txt', { timeout: 5000 });
+    const sitemaps = data.match(/Sitemap:\s*(.+)/gi) || [];
+    return sitemaps.map(s => s.replace(/Sitemap:\s*/i, '').trim());
+  } catch {
+    return [];
+  }
+};
+
 const scrapeEmails = async (input) => {
   const baseUrl = normalizeUrl(input);
+  const isShopify = input.includes('myshopify.com') || input.includes('shopify');
 
-  // All pages fetched in parallel
-  const paths = [
+  // Core pages - fetched in parallel
+  const corePaths = [
     '/', '/contact', '/contact-us', '/about', '/about-us',
-    '/privacy-policy', '/terms', '/pages/contact', '/pages/about',
-    '/info/contact', '/help', '/support', '/get-in-touch'
+    '/privacy-policy', '/pages/contact', '/pages/about',
+    '/pages/contact-us', '/pages/about-us',
+    '/info/contact', '/help', '/support'
   ];
 
+  // Add Shopify-specific paths
+  if (isShopify) {
+    corePaths.push(
+      '/pages/faq', '/pages/shipping', '/pages/returns',
+      '/pages/wholesale', '/pages/stockists', '/pages/press'
+    );
+  }
+
+  const allEmails = [];
+
+  // 1. Fetch all core pages in parallel
   const pageHtmls = await Promise.all(
-    paths.map(path => {
-      try {
-        return fetchPage(new URL(path, baseUrl).toString());
-      } catch {
-        return null;
-      }
+    corePaths.map(path => {
+      try { return fetchPage(new URL(path, baseUrl).toString()); } 
+      catch { return null; }
     })
   );
-
-  // Collect ALL emails from ALL pages
-  const allEmails = [];
   for (const html of pageHtmls) {
     allEmails.push(...extractEmailsFromHtml(html));
   }
 
-  // Also check homepage for hidden contact page links
+  // 2. Check security.txt in parallel
+  const [securityEmails, shopifyEmails] = await Promise.all([
+    getSecurityTxt(baseUrl),
+    isShopify ? getShopifyContactEmail(baseUrl) : Promise.resolve([])
+  ]);
+  allEmails.push(...securityEmails, ...shopifyEmails);
+
+  // 3. Check sitemap for hidden pages
+  const sitemapPages = await getSitemapPages(baseUrl);
+  if (sitemapPages.length > 0) {
+    const sitemapHtmls = await Promise.all(
+      sitemapPages.slice(0, 8).map(url => fetchPage(url))
+    );
+    for (const html of sitemapHtmls) {
+      allEmails.push(...extractEmailsFromHtml(html));
+    }
+  }
+
+  // 4. Follow extra contact links from homepage
   const homepageHtml = pageHtmls[0];
   if (homepageHtml) {
     const $ = cheerio.load(homepageHtml);
@@ -134,24 +239,23 @@ const scrapeEmails = async (input) => {
       const text = $(el).text().toLowerCase();
       if (
         href.startsWith('/') &&
-        !paths.includes(href) &&
-        (text.includes('contact') || text.includes('about') || 
+        !corePaths.includes(href) &&
+        href.length < 60 &&
+        (text.includes('contact') || text.includes('about') ||
          text.includes('reach') || text.includes('email') ||
-         text.includes('touch') || text.includes('connect'))
+         text.includes('touch') || text.includes('connect') ||
+         text.includes('wholesale') || text.includes('press') ||
+         text.includes('stockist'))
       ) {
         extraPaths.push(href);
       }
     });
 
-    // Fetch extra contact-related pages found on homepage
     if (extraPaths.length > 0) {
       const extraHtmls = await Promise.all(
-        extraPaths.slice(0, 5).map(path => {
-          try {
-            return fetchPage(new URL(path, baseUrl).toString());
-          } catch {
-            return null;
-          }
+        [...new Set(extraPaths)].slice(0, 6).map(path => {
+          try { return fetchPage(new URL(path, baseUrl).toString()); }
+          catch { return null; }
         })
       );
       for (const html of extraHtmls) {
@@ -179,7 +283,7 @@ const findEmailForDomain = async (input, hunterApiKey) => {
     } catch {}
   }
 
-  // Deep parallel scrape
+  // Deep Shopify-aware scrape
   const scrapedEmail = await scrapeEmails(input);
   if (scrapedEmail) {
     return { email: scrapedEmail, source: 'Scraped', status: 'Found', flagged: false };
