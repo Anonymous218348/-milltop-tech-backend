@@ -101,21 +101,39 @@ router.post('/scan',
 // Returns scanned stores, excluding any that already have a successfully
 // sent email logged — so the Email Sender / Email Finder lists don't keep
 // showing stores you've already emailed.
-router.get('/results', asyncHandler(async (req, res) => {
-  const { rows } = await db.query(
-    `SELECT s.* FROM stores s
-     WHERE s.user_id = $1
-       AND NOT EXISTS (
-         SELECT 1 FROM email_logs el
-         WHERE el.user_id = s.user_id
-           AND el.store_id = s.id
-           AND el.status = 'sent'
-       )
-     ORDER BY s.created_at DESC`,
-    [req.user.id]
-  );
-  res.json({ stores: rows });
-}));
+// Returns scanned stores
+router.get('/results', async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `
+      SELECT s.*
+      FROM stores s
+      WHERE s.user_id = $1
+      AND NOT EXISTS (
+        SELECT 1
+        FROM email_logs el
+        WHERE el.user_id = s.user_id
+          AND el.store_id = s.id
+          AND el.status = 'sent'
+      )
+      ORDER BY s.created_at DESC
+      `,
+      [req.user.id]
+    );
+
+    res.json({ stores: rows });
+
+  } catch (err) {
+    console.error('===== SCANNER RESULTS ERROR =====');
+    console.error(err);
+    console.error('=================================');
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
 
 // Permanently remove a scanned store (used by the delete button in
 // Email Finder / Scanner tables).
