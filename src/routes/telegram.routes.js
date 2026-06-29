@@ -162,7 +162,7 @@ const handleScan = async (chatId, input) => {
     const user = await getUser();
     if (!user) { await sendMessage(chatId, '❌ No user found in database.'); return; }
 
-    const url = text.split(/\s+/)[1].replace(/[\\/]+$/, '');
+    const url = normalizeUrl(input).replace(/[\\/]+$/, '');
     const apiKey = await getApiKey(user.id, 'pagespeed_api_key', 'PAGESPEED_API_KEY');
 
     const [mobile, desktop] = await Promise.all([
