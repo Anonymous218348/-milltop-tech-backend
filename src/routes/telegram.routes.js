@@ -15,7 +15,13 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ALLOWED_USER_ID = parseInt(process.env.TELEGRAM_USER_ID, 10);
 const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
-// Send message to Telegram
+// Escape Telegram legacy-Markdown special characters in dynamic/scraped text
+// so a stray "_" or "*" in an email, domain, or DB value can't break parse_mode.
+const escapeMd = (str = '') => String(str).replace(/([_*[\]()~`>#+\-=|{}.!])/g, '\\$1');
+
+// Send message to Telegram. Falls back to a plain-text retry (stripped of
+// Markdown characters) if the formatted send fails, so the user always gets
+// a reply instead of silent failure.
 const sendMessage = async (chatId, text, options = {}) => {
   try {
     await axios.post(`${API_URL}/sendMessage`, {
@@ -26,6 +32,14 @@ const sendMessage = async (chatId, text, options = {}) => {
     });
   } catch (e) {
     console.error('Telegram send error:', e.message);
+    try {
+      await axios.post(`${API_URL}/sendMessage`, {
+        chat_id: chatId,
+        text: text.replace(/[*_`[\]]/g, '')
+      });
+    } catch (e2) {
+      console.error('Telegram fallback send also failed:', e2.message);
+    }
   }
 };
 
@@ -157,7 +171,7 @@ Just send me a URL and I'll scan it automatically!
 // ── HANDLERS ──────────────────────────────────────────────────────
 
 const handleScan = async (chatId, input) => {
-  await sendMessage(chatId, `🔍 Scanning *${input}*...\n_This takes 15-30 seconds_`);
+  await sendMessage(chatId, `🔍 Scanning *${escapeMd(input)}*...\n_This takes 15-30 seconds_`);
   try {
     const user = await getUser();
     if (!user) { await sendMessage(chatId, '❌ No user found in database.'); return; }
@@ -183,7 +197,7 @@ const handleScan = async (chatId, input) => {
     const domain = url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
 
     await sendMessage(chatId, `
-✅ *Scan Complete: ${domain}*
+✅ *Scan Complete: ${escapeMd(domain)}*
 
 📱 *Mobile*
 Performance: ${scoreEmoji(store.mobile_performance)}
@@ -200,12 +214,12 @@ ${store.mobile_performance < 70 ? '⚠️ Low mobile performance — good outrea
 Use /find ${input} to find their email.
     `.trim());
   } catch (e) {
-    await sendMessage(chatId, `❌ Scan failed: ${e.message}`);
+    await sendMessage(chatId, `❌ Scan failed: ${escapeMd(e.message)}`);
   }
 };
 
 const handleFind = async (chatId, input) => {
-  await sendMessage(chatId, `📧 Finding email for *${input}*...\n_Searching contact pages..._`);
+  await sendMessage(chatId, `📧 Finding email for *${escapeMd(input)}*...\n_Searching contact pages..._`);
   try {
     const user = await getUser();
     if (!user) { await sendMessage(chatId, '❌ No user found.'); return; }
@@ -225,17 +239,17 @@ const handleFind = async (chatId, input) => {
       await sendMessage(chatId, `
 ✅ *Email Found!*
 
-📧 ${result.email}
-🔍 Source: ${result.source}
-🌐 Domain: ${input}
+📧 ${escapeMd(result.email)}
+🔍 Source: ${escapeMd(result.source)}
+🌐 Domain: ${escapeMd(input)}
 
 Reply with this email to add them as a contact!
       `.trim());
     } else {
-      await sendMessage(chatId, `❌ No email found for *${input}*\n\nTry entering it manually in the app.`);
+      await sendMessage(chatId, `❌ No email found for *${escapeMd(input)}*\n\nTry entering it manually in the app.`);
     }
   } catch (e) {
-    await sendMessage(chatId, `❌ Error: ${e.message}`);
+    await sendMessage(chatId, `❌ Error: ${escapeMd(e.message)}`);
   }
 };
 
@@ -251,11 +265,11 @@ const handleContacts = async (chatId) => {
       return;
     }
     const list = rows.map((c, i) =>
-      `${i + 1}. *${c.name || c.domain || 'Unknown'}*\n   📧 ${c.email}\n   Stage: ${c.outreach_stage || 'lead'}`
+      `${i + 1}. *${escapeMd(c.name || c.domain || 'Unknown')}*\n   📧 ${escapeMd(c.email)}\n   Stage: ${escapeMd(c.outreach_stage || 'lead')}`
     ).join('\n\n');
     await sendMessage(chatId, `📋 *Your Contacts (last 10)*\n\n${list}`);
   } catch (e) {
-    await sendMessage(chatId, `❌ Error: ${e.message}`);
+    await sendMessage(chatId, `❌ Error: ${escapeMd(e.message)}`);
   }
 };
 
@@ -271,9 +285,9 @@ const handleAddContact = async (chatId, email) => {
        VALUES ($1, $2, 'lead', 'new')`,
       [user.id, email]
     );
-    await sendMessage(chatId, `✅ Contact *${email}* added successfully!`);
+    await sendMessage(chatId, `✅ Contact *${escapeMd(email)}* added successfully!`);
   } catch (e) {
-    await sendMessage(chatId, `❌ Error: ${e.message}`);
+    await sendMessage(chatId, `❌ Error: ${escapeMd(e.message)}`);
   }
 };
 
@@ -289,11 +303,11 @@ const handleTracker = async (chatId) => {
       return;
     }
     const list = rows.map((e, i) =>
-      `${i + 1}. *${e.store_name || e.website || 'Unknown'}*\n   Status: ${e.status || 'New'}\n   Email: ${e.email || 'N/A'}`
+      `${i + 1}. *${escapeMd(e.store_name || e.website || 'Unknown')}*\n   Status: ${escapeMd(e.status || 'New')}\n   Email: ${escapeMd(e.email || 'N/A')}`
     ).join('\n\n');
     await sendMessage(chatId, `📊 *Outreach Tracker (last 10)*\n\n${list}`);
   } catch (e) {
-    await sendMessage(chatId, `❌ Error: ${e.message}`);
+    await sendMessage(chatId, `❌ Error: ${escapeMd(e.message)}`);
   }
 };
 
@@ -309,11 +323,11 @@ const handleCampaigns = async (chatId) => {
       return;
     }
     const list = rows.map((c, i) =>
-      `${i + 1}. *${c.name}*\n   Status: ${c.status || 'draft'}`
+      `${i + 1}. *${escapeMd(c.name)}*\n   Status: ${escapeMd(c.status || 'draft')}`
     ).join('\n\n');
     await sendMessage(chatId, `📣 *Your Campaigns*\n\n${list}`);
   } catch (e) {
-    await sendMessage(chatId, `❌ Error: ${e.message}`);
+    await sendMessage(chatId, `❌ Error: ${escapeMd(e.message)}`);
   }
 };
 
@@ -337,7 +351,7 @@ const handleStats = async (chatId) => {
 📧 Emails Sent: *${emails.rows[0].count}*
     `.trim());
   } catch (e) {
-    await sendMessage(chatId, `❌ Error: ${e.message}`);
+    await sendMessage(chatId, `❌ Error: ${escapeMd(e.message)}`);
   }
 };
 
@@ -363,9 +377,11 @@ const handleAI = async (chatId, question) => {
     });
 
     const reply = data.choices[0].message.content;
-    await sendMessage(chatId, `🤖 *AI Response*\n\n${reply}`);
+    // AI output is free-form and may contain stray Markdown chars (e.g. "_" in
+    // an email address it suggests), so escape it before sending.
+    await sendMessage(chatId, `🤖 *AI Response*\n\n${escapeMd(reply)}`);
   } catch (e) {
-    await sendMessage(chatId, `❌ AI error: ${e.message}`);
+    await sendMessage(chatId, `❌ AI error: ${escapeMd(e.message)}`);
   }
 };
 
