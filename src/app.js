@@ -17,6 +17,7 @@ const crmRoutes = require('./routes/crm.routes');
 const trackerRoutes = require('./routes/tracker.routes');
 const aiRoutes = require('./routes/ai.routes');
 const settingsRoutes = require('./routes/settings.routes');
+const telegramRoutes = require('./routes/telegram.routes');
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.use('/api/crm', crmRoutes);
 app.use('/api/tracker', trackerRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/telegram', telegramRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
