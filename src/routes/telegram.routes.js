@@ -80,6 +80,7 @@ Here's what I can do:
 
 *Scanner*
 /scan https://store.com — Scan a website
+/bulkscan — Scan up to 500 URLs at once (one per line)
 
 *Email Finder*
 /find https://store.com — Find contact email
@@ -106,7 +107,7 @@ Just send me a URL and I'll scan it automatically!
   }
 
   // ── AUTO SCAN if just a URL is sent ───────────────────────────
-  if ((lower.startsWith('http://') || lower.startsWith('https://')) && !lower.includes(' ')) {
+  if ((lower.startsWith('http://') || lower.startsWith('https://')) && !lower.includes(' ') && !lower.includes('\n')) {
     await handleScan(chatId, text);
     return;
   }
@@ -116,6 +117,25 @@ Just send me a URL and I'll scan it automatically!
     const url = text.split(/\s+/)[1];
     if (!url) { await sendMessage(chatId, '❌ Please provide a URL. Example: /scan https://store.com'); return; }
     await handleScan(chatId, url);
+    return;
+  }
+
+  // ── BULK SCAN (handles up to 500 URLs) ────────────────────────
+  if (lower.startsWith('/bulkscan')) {
+    const body = text.replace(/^\/bulkscan/i, '').trim();
+    const urls = body.split(/[\n,]+/).map(u => u.trim()).filter(u => u.toLowerCase().startsWith('http'));
+
+    if (urls.length === 0) {
+      await sendMessage(chatId, '❌ Paste your URLs after /bulkscan, one per line. Example:\n\n/bulkscan\nhttps://store1.com\nhttps://store2.com');
+      return;
+    }
+
+    if (urls.length > 500) {
+      await sendMessage(chatId, `❌ Max 500 URLs at once. You sent ${urls.length}. Trim the list and try again.`);
+      return;
+    }
+
+    await handleBulkScan(chatId, urls);
     return;
   }
 
@@ -215,6 +235,83 @@ Use /find ${input} to find their email.
     `.trim());
   } catch (e) {
     await sendMessage(chatId, `❌ Scan failed: ${escapeMd(e.message)}`);
+  }
+};
+
+// ── BULK SCAN HANDLER (up to 500 URLs, sequential with progress) ──
+const handleBulkScan = async (chatId, urls) => {
+  const total = urls.length;
+  await sendMessage(chatId, `🔍 Starting bulk scan of *${total} stores*...\n_Progress updates every 20 stores. This will take a while._`);
+
+  const user = await getUser();
+  if (!user) { await sendMessage(chatId, '❌ No user found in database.'); return; }
+
+  const apiKey = await getApiKey(user.id, 'pagespeed_api_key', 'PAGESPEED_API_KEY');
+
+  let scanned = 0;
+  let flagged = 0;
+  let failed = 0;
+  const flaggedStores = [];
+
+  for (const input of urls) {
+    try {
+      const url = normalizeUrl(input).replace(/[\\/]+$/, '');
+
+      const [mobile, desktop] = await Promise.all([
+        runPageSpeed(url, 'mobile', apiKey),
+        runPageSpeed(url, 'desktop', apiKey)
+      ]);
+
+      const { rows } = await db.query(
+        `INSERT INTO stores (user_id, url, mobile_performance, desktop_performance, mobile_seo, desktop_seo,
+          mobile_best_practices, desktop_best_practices, mobile_accessibility, desktop_accessibility)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         RETURNING *`,
+        [user.id, url, mobile.performance, desktop.performance, mobile.seo, desktop.seo,
+         mobile.bestPractices, desktop.bestPractices, mobile.accessibility, desktop.accessibility]
+      );
+
+      const store = rows[0];
+      const domain = url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+
+      if ((store.mobile_performance !== null && store.mobile_performance < 70) ||
+          (store.mobile_seo !== null && store.mobile_seo < 70)) {
+        flagged++;
+        flaggedStores.push(`${escapeMd(domain)} — Perf: ${store.mobile_performance ?? '?'} | SEO: ${store.mobile_seo ?? '?'}`);
+      }
+
+      scanned++;
+    } catch (e) {
+      failed++;
+      console.error(`Bulk scan failed for ${input}:`, e.message);
+    }
+
+    if (scanned % 20 === 0 || scanned + failed === total) {
+      await sendMessage(chatId, `📊 Progress: ${scanned + failed}/${total} scanned (${flagged} flagged, ${failed} failed)`);
+    }
+
+    // Small delay to avoid hammering PageSpeed API and Telegram rate limits
+    await new Promise(resolve => setTimeout(resolve, 800));
+  }
+
+  const summary = `
+✅ *Bulk Scan Complete*
+
+📦 Total: ${total}
+✅ Scanned: ${scanned}
+🎯 Flagged as targets: ${flagged}
+❌ Failed: ${failed}
+  `.trim();
+
+  await sendMessage(chatId, summary);
+
+  if (flaggedStores.length > 0) {
+    const chunkSize = 25;
+    for (let i = 0; i < flaggedStores.length; i += chunkSize) {
+      const chunk = flaggedStores.slice(i, i + chunkSize);
+      await sendMessage(chatId, `🎯 *Flagged Targets (${i + 1}-${Math.min(i + chunkSize, flaggedStores.length)})*\n\n${chunk.join('\n')}`);
+    }
+    await sendMessage(chatId, 'Use /find <url> on any of these to get their email, or check the Scanner tab in the app for the full list.');
   }
 };
 
