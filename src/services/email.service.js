@@ -17,7 +17,7 @@ const createTransport = (account) => {
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: account.user,
+      user: account.email,
       pass: account.pass
     }
   });
@@ -37,7 +37,7 @@ const sendOne = async ({ userId, account, to, subject, body, storeId, contactId,
   const transporter = createTransport(account);
   try {
     await transporter.sendMail({
-      from: account.from || account.user,
+      from: account.from || account.email,
       to,
       subject,
       text: body,
