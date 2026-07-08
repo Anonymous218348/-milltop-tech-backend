@@ -10,7 +10,7 @@ const personalize = (text, data) => String(text || '')
   .replace(/\{\{\s*pagespeed_score\s*\}\}/gi, data.mobileScore == null ? '' : String(data.mobileScore));
 
 const createTransport = (account) => {
-  if (!account || !account.user || !account.pass) {
+  if (!account || !account.email || !account.pass) {
     throw new Error('A Gmail account with user and app password is required');
   }
 
