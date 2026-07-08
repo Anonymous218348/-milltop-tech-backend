@@ -15,13 +15,15 @@ const createTransport = (account) => {
   }
 
   return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: account.email,
-      pass: account.pass
-    }
-  });
-};
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: account.email,
+    pass: account.pass
+  },
+  family: 4  // forces IPv4, avoids the IPv6 hang on Render
+});
 
 const logEmail = async ({ userId, storeId, contactId, campaignId, subject, body, status, sentAt }) => {
   const { rows } = await db.query(
