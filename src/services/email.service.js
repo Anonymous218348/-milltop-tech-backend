@@ -13,18 +13,17 @@ const createTransport = (account) => {
   if (!account || !account.email || !account.pass) {
     throw new Error('A Gmail account with user and app password is required');
   }
-
   return nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: account.email,
-    pass: account.pass
-  },
-  family: 4  // forces IPv4, avoids the IPv6 hang on Render
-});
-
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: account.email,
+      pass: account.pass
+    },
+    family: 4
+  });
+};
 const logEmail = async ({ userId, storeId, contactId, campaignId, subject, body, status, sentAt }) => {
   const { rows } = await db.query(
     `INSERT INTO email_logs (user_id, store_id, contact_id, campaign_id, subject, body, status, sent_at)
