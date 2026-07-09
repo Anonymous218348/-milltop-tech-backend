@@ -31,14 +31,16 @@ router.post('/',
     const { rows } = await db.query(
       `INSERT INTO user_settings (
         user_id, pagespeed_api_key, hunter_api_key, groq_api_key,
-        sendgrid_api_key, mailgun_api_key, mailgun_domain, mailgun_from, gmail_accounts
+        sendgrid_api_key, sendgrid_from, sendgrid_name,
+        mailgun_api_key, mailgun_domain, mailgun_from, gmail_accounts
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
       ON CONFLICT (user_id)
       DO UPDATE SET
         pagespeed_api_key=$2, hunter_api_key=$3, groq_api_key=$4,
-        sendgrid_api_key=$5, mailgun_api_key=$6, mailgun_domain=$7,
-        mailgun_from=$8, gmail_accounts=$9, updated_at=NOW()
+        sendgrid_api_key=$5, sendgrid_from=$6, sendgrid_name=$7,
+        mailgun_api_key=$8, mailgun_domain=$9, mailgun_from=$10,
+        gmail_accounts=$11, updated_at=NOW()
       RETURNING *`,
       [
         req.user.id,
@@ -46,6 +48,8 @@ router.post('/',
         req.body.hunterApiKey || null,
         req.body.groqApiKey || null,
         req.body.sendgridApiKey || null,
+        req.body.sendgridFrom || null,
+        req.body.sendgridName || null,
         req.body.mailgunApiKey || null,
         req.body.mailgunDomain || null,
         req.body.mailgunFrom || null,
@@ -55,5 +59,3 @@ router.post('/',
     res.json({ settings: rows[0] });
   })
 );
-
-module.exports = router;
