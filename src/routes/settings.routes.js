@@ -59,3 +59,5 @@ router.post('/',
     res.json({ settings: rows[0] });
   })
 );
+
+module.exports = router;
