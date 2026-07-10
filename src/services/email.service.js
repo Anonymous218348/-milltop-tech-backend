@@ -25,17 +25,17 @@ const getSendgridConfig = async (userId) => {
   };
 };
 
-const logEmail = async ({ userId, storeId, contactId, campaignId, subject, body, status, sentAt }) => {
+const logEmail = async ({ userId, storeId, contactId, campaignId, subject, body, status, sentAt, storeName, toEmail }) => {
   const { rows } = await db.query(
-    `INSERT INTO email_logs (user_id, store_id, contact_id, campaign_id, subject, body, status, sent_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO email_logs (user_id, store_id, contact_id, campaign_id, subject, body, status, sent_at, store_name, to_email)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
-    [userId, storeId || null, contactId || null, campaignId || null, subject, body, status, sentAt || null]
+    [userId, storeId || null, contactId || null, campaignId || null, subject, body, status, sentAt || null, storeName || null, toEmail || null]
   );
   return rows[0];
 };
 
-const sendOne = async ({ userId, to, subject, body, storeId, contactId, campaignId }) => {
+const sendOne = async ({ userId, to, subject, body, storeId, contactId, campaignId, storeName }) => {
   const { from, fromName } = await getSendgridConfig(userId);
   try {
     await sgMail.send({
@@ -46,20 +46,11 @@ const sendOne = async ({ userId, to, subject, body, storeId, contactId, campaign
       html: body.replace(/\n/g, '<br>')
     });
 
-    return logEmail({
-      userId,
-      storeId,
-      contactId,
-      campaignId,
-      subject,
-      body,
-      status: 'sent',
-      sentAt: new Date()
-    });
+    return logEmail({ userId, storeId, contactId, campaignId, subject, body, status: 'sent', sentAt: new Date(), storeName, toEmail: to });
   } catch (error) {
     const message = error?.response?.body?.errors?.[0]?.message || error.message;
     try {
-      await logEmail({ userId, storeId, contactId, campaignId, subject, body, status: `failed: ${message}` });
+      await logEmail({ userId, storeId, contactId, campaignId, subject, body, status: `failed: ${message}`, storeName, toEmail: to });
     } catch (logError) {
       console.error('Failed to log email failure:', logError);
     }
@@ -87,7 +78,8 @@ const sendBulk = async ({ userId, contacts, subject, body, delayMs = 500, campai
         body: personalizedBody,
         storeId: contact.store_id,
         contactId: contact.id,
-        campaignId
+        campaignId,
+        storeName: contact.store_name
       });
       results.push({ contactId: contact.id, status: 'sent', log });
     } catch (error) {
