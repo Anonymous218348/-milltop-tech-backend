@@ -3,17 +3,31 @@ const db = require('../db');
 const { delay } = require('../utils/delay');
 const { getSettings } = require('./settings.service');
 
-const personalize = (text, data = {}) => String(text || '')
-  .replace(/\{\{\s*name\s*\}\}/gi, data.name || '')
-  .replace(/\{\{\s*first_name\s*\}\}/gi, data.name ? data.name.split(' ')[0] : '')
-  .replace(/\{\{\s*store_name\s*\}\}/gi, data.storeName || data.domain || '')
-  .replace(/\{\{\s*domain\s*\}\}/gi, data.domain || '')
-  .replace(/\{\{\s*email\s*\}\}/gi, data.email || '')
-  .replace(/\{\{\s*website\s*\}\}/gi, data.website || '')
-  .replace(/\{\{\s*phone\s*\}\}/gi, data.phone || '')
-  .replace(/\{\{\s*mobile_score\s*\}\}/gi, data.mobileScore == null ? '' : String(data.mobileScore))
-  .replace(/\{\{\s*pagespeed_score\s*\}\}/gi, data.mobileScore == null ? '' : String(data.mobileScore));
+// Replaces all known placeholder formats with actual values
+const personalize = (text, data = {}) => {
+  let out = String(text || '');
+  const sn = data.storeName || data.store_name || data.domain || data.name || '';
+  const score = data.mobileScore == null ? '' : String(data.mobileScore);
 
+  // {{variable}} and {variable} formats
+  out = out.replace(/\{\{?\s*name\s*\}?\}/gi, data.name || sn);
+  out = out.replace(/\{\{?\s*first_name\s*\}?\}/gi, (data.name || sn).split(' ')[0]);
+  out = out.replace(/\{\{?\s*store[_\s]?name\s*\}?\}/gi, sn);
+  out = out.replace(/\{\{?\s*domain\s*\}?\}/gi, data.domain || sn);
+  out = out.replace(/\{\{?\s*email\s*\}?\}/gi, data.email || '');
+  out = out.replace(/\{\{?\s*website\s*\}?\}/gi, data.website || '');
+  out = out.replace(/\{\{?\s*phone\s*\}?\}/gi, data.phone || '');
+  out = out.replace(/\{\{?\s*mobile[_\s]?score\s*\}?\}/gi, score);
+  out = out.replace(/\{\{?\s*pagespeed[_\s]?score\s*\}?\}/gi, score);
+
+  // [store name], [storeName] formats (AI-generated templates)
+  out = out.replace(/\[store\s*name\]/gi, sn);
+  out = out.replace(/\[storeName\]/gi, sn);
+  out = out.replace(/\[mobile\s*score\]/gi, score);
+  out = out.replace(/\[mobileScore\]/gi, score);
+
+  return out;
+};
 
 const getSendgridConfig = async (userId) => {
   const settings = await getSettings(userId);
@@ -21,7 +35,6 @@ const getSendgridConfig = async (userId) => {
   if (!settings || !settings.sendgrid_api_key) {
     throw new Error('SendGrid API key is required in Settings');
   }
-
   if (!settings.sendgrid_from) {
     throw new Error('A verified sender email (sendgrid_from) is required in Settings');
   }
@@ -34,7 +47,6 @@ const getSendgridConfig = async (userId) => {
     templateId: settings.sendgrid_template_id || null
   };
 };
-
 
 const logEmail = async ({ userId, storeId, contactId, campaignId, subject, body, status, sentAt, storeName, toEmail }) => {
   const { rows } = await db.query(
@@ -55,35 +67,47 @@ const logEmail = async ({ userId, storeId, contactId, campaignId, subject, body,
       toEmail || null
     ]
   );
-
   return rows[0];
 };
 
-
-const sendOne = async ({ userId, to, subject, body, storeId, contactId, campaignId, storeName }) => {
+const sendOne = async ({ userId, to, subject, body, storeId, contactId, campaignId, storeName, data = {} }) => {
   const { from, fromName, templateId } = await getSendgridConfig(userId);
 
-  // Build the message — use SendGrid template if a template ID is saved
-  // in settings, otherwise fall back to raw HTML (existing behaviour).
+  // Merge storeName into data so personalize() works for all formats
+  const mergedData = {
+    storeName,
+    name: storeName,
+    domain: storeName,
+    ...data
+  };
+
+  // Personalize subject and body regardless of sending mode
+  const personalizedSubject = personalize(subject, mergedData);
+  const personalizedBody = personalize(body, mergedData);
+
   let message;
 
   if (templateId) {
+    // SendGrid dynamic template — pass personalized content as template variables.
+    // subject must also be set at top level for deliverability even when template
+    // has its own subject field, because some ESPs require it.
     message = {
       to,
       from: { email: from, name: fromName },
+      subject: personalizedSubject, // top-level subject (required by some clients)
       templateId,
       dynamicTemplateData: {
-        subject,
-        message: body // maps to {{message}} in your SendGrid template
+        subject: personalizedSubject, // maps to {{subject}} in your template
+        message: personalizedBody     // maps to {{message}} in your template
       }
     };
   } else {
     message = {
       to,
       from: { email: from, name: fromName },
-      subject,
-      text: body.replace(/<[^>]*>/g, ''),
-      html: body
+      subject: personalizedSubject,
+      text: personalizedBody.replace(/<[^>]*>/g, ''),
+      html: personalizedBody
     };
   }
 
@@ -95,8 +119,8 @@ const sendOne = async ({ userId, to, subject, body, storeId, contactId, campaign
       storeId,
       contactId,
       campaignId,
-      subject,
-      body,
+      subject: personalizedSubject,
+      body: personalizedBody,
       status: 'sent',
       sentAt: new Date(),
       storeName,
@@ -104,7 +128,7 @@ const sendOne = async ({ userId, to, subject, body, storeId, contactId, campaign
     });
 
   } catch (error) {
-    const message = error?.response?.body?.errors?.[0]?.message || error.message;
+    const errMsg = error?.response?.body?.errors?.[0]?.message || error.message;
 
     try {
       await logEmail({
@@ -112,9 +136,9 @@ const sendOne = async ({ userId, to, subject, body, storeId, contactId, campaign
         storeId,
         contactId,
         campaignId,
-        subject,
-        body,
-        status: `failed: ${message}`,
+        subject: personalizedSubject,
+        body: personalizedBody,
+        status: `failed: ${errMsg}`,
         storeName,
         toEmail: to
       });
@@ -122,55 +146,43 @@ const sendOne = async ({ userId, to, subject, body, storeId, contactId, campaign
       console.error('Failed to log email failure:', logError);
     }
 
-    throw new Error(message);
+    throw new Error(errMsg);
   }
 };
-
 
 const sendBulk = async ({ userId, contacts, subject, body, delayMs = 500, campaignId }) => {
   const results = [];
 
   for (let index = 0; index < contacts.length; index += 1) {
-
     const contact = contacts[index];
 
     const data = {
-      name: contact.name,
+      name: contact.name || contact.store_name,
+      storeName: contact.store_name,
       email: contact.email,
       website: contact.website,
       phone: contact.phone,
       domain: contact.domain,
-      storeName: contact.store_name,
       mobileScore: contact.mobile_score
     };
-
-    const personalizedSubject = personalize(subject, data);
-    const personalizedBody = personalize(body, data);
 
     try {
       const log = await sendOne({
         userId,
         to: contact.email,
-        subject: personalizedSubject,
-        body: personalizedBody,
+        subject,
+        body,
         storeId: contact.store_id,
         contactId: contact.id,
         campaignId,
-        storeName: contact.store_name
+        storeName: contact.store_name,
+        data
       });
 
-      results.push({
-        contactId: contact.id,
-        status: 'sent',
-        log
-      });
+      results.push({ contactId: contact.id, status: 'sent', log });
 
     } catch (error) {
-      results.push({
-        contactId: contact.id,
-        status: 'failed',
-        message: error.message
-      });
+      results.push({ contactId: contact.id, status: 'failed', message: error.message });
     }
 
     if (index < contacts.length - 1) {
@@ -181,9 +193,4 @@ const sendBulk = async ({ userId, contacts, subject, body, delayMs = 500, campai
   return results;
 };
 
-
-module.exports = {
-  personalize,
-  sendOne,
-  sendBulk
-};
+module.exports = { personalize, sendOne, sendBulk };
