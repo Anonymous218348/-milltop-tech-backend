@@ -16,6 +16,9 @@ router.get('/', asyncHandler(async (req, res) => {
       hunter_api_key: null,
       groq_api_key: null,
       sendgrid_api_key: null,
+      sendgrid_from: null,
+      sendgrid_name: null,
+      sendgrid_template_id: null,
       mailgun_api_key: null,
       mailgun_domain: null,
       mailgun_from: null,
@@ -31,16 +34,17 @@ router.post('/',
     const { rows } = await db.query(
       `INSERT INTO user_settings (
         user_id, pagespeed_api_key, hunter_api_key, groq_api_key,
-        sendgrid_api_key, sendgrid_from, sendgrid_name,
+        sendgrid_api_key, sendgrid_from, sendgrid_name, sendgrid_template_id,
         mailgun_api_key, mailgun_domain, mailgun_from, gmail_accounts
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
       ON CONFLICT (user_id)
       DO UPDATE SET
         pagespeed_api_key=$2, hunter_api_key=$3, groq_api_key=$4,
         sendgrid_api_key=$5, sendgrid_from=$6, sendgrid_name=$7,
-        mailgun_api_key=$8, mailgun_domain=$9, mailgun_from=$10,
-        gmail_accounts=$11, updated_at=NOW()
+        sendgrid_template_id=$8,
+        mailgun_api_key=$9, mailgun_domain=$10, mailgun_from=$11,
+        gmail_accounts=$12, updated_at=NOW()
       RETURNING *`,
       [
         req.user.id,
@@ -50,6 +54,7 @@ router.post('/',
         req.body.sendgridApiKey || null,
         req.body.sendgridFrom || null,
         req.body.sendgridName || null,
+        req.body.sendgridTemplateId || null,
         req.body.mailgunApiKey || null,
         req.body.mailgunDomain || null,
         req.body.mailgunFrom || null,
