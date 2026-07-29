@@ -21,7 +21,6 @@ const isSiteAlive = async (url) => {
     });
     return res.status < 500;
   } catch {
-    // Try GET if HEAD fails (some servers block HEAD)
     try {
       const res = await axios.get(url, {
         timeout: 5000,
@@ -39,12 +38,10 @@ const isSiteAlive = async (url) => {
 
 const scanSingleUrl = async (url, apiKey, userId) => {
   try {
-    // Skip dead sites
     const alive = await isSiteAlive(url);
     if (!alive) {
       return { success: false, url, error: 'Site unreachable — skipped' };
     }
-    // Run mobile and desktop in parallel
     const [mobile, desktop] = await Promise.all([
       runPageSpeed(url, 'mobile', apiKey),
       runPageSpeed(url, 'desktop', apiKey)
@@ -81,7 +78,7 @@ router.post('/scan',
     const input = req.body.urls || req.body.url;
     const urls = (Array.isArray(input) ? input : [input]).map(normalizeUrl);
     const apiKey = await getApiKey(req.user.id, 'pagespeed_api_key', 'PAGESPEED_API_KEY');
-    const BATCH_SIZE = 5; // 5 sites at a time
+    const BATCH_SIZE = 5;
     const results = [];
     const skipped = [];
     for (let i = 0; i < urls.length; i += BATCH_SIZE) {
@@ -99,31 +96,36 @@ router.post('/scan',
 );
 
 // Returns scanned stores, excluding any that already have a successfully
-// sent email logged — so the Email Sender / Email Finder lists don't keep
-// showing stores you've already emailed.
-// Returns scanned stores
+// sent email logged so the Email Sender table doesn't show stores
+// you've already emailed after a refresh.
 router.get('/results', asyncHandler(async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT * FROM stores
-       WHERE user_id = $1
-       ORDER BY created_at DESC`,
+      `SELECT s.* FROM stores s
+       WHERE s.user_id = $1
+       AND s.id NOT IN (
+         SELECT DISTINCT store_id FROM email_logs
+         WHERE user_id = $1
+         AND store_id IS NOT NULL
+         AND status = 'sent'
+       )
+       ORDER BY s.created_at DESC`,
       [req.user.id]
     );
-
     res.json({ stores: rows });
-
   } catch (err) {
     console.error('Scanner Results Error:', err);
-    res.status(500).json({
-      message: err.message,
-      stack: err.stack
-    });
+    res.status(500).json({ message: err.message, stack: err.stack });
   }
 }));
 
-// Permanently remove a scanned store (used by the delete button in
-// Email Finder / Scanner tables).
+// Clear ALL scan results for this user permanently
+router.delete('/results/all', asyncHandler(async (req, res) => {
+  await db.query('DELETE FROM stores WHERE user_id = $1', [req.user.id]);
+  res.sendStatus(204);
+}));
+
+// Delete a single scanned store permanently
 router.delete('/:id', asyncHandler(async (req, res) => {
   await db.query('DELETE FROM stores WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
   res.sendStatus(204);
