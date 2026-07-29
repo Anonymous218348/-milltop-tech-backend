@@ -30,7 +30,8 @@ const getSendgridConfig = async (userId) => {
 
   return {
     from: settings.sendgrid_from,
-    fromName: settings.sendgrid_name || 'Milltop Tech'
+    fromName: settings.sendgrid_name || 'Milltop Tech',
+    templateId: settings.sendgrid_template_id || null
   };
 };
 
@@ -60,19 +61,34 @@ const logEmail = async ({ userId, storeId, contactId, campaignId, subject, body,
 
 
 const sendOne = async ({ userId, to, subject, body, storeId, contactId, campaignId, storeName }) => {
-  const { from, fromName } = await getSendgridConfig(userId);
+  const { from, fromName, templateId } = await getSendgridConfig(userId);
 
-  try {
-    await sgMail.send({
+  // Build the message — use SendGrid template if a template ID is saved
+  // in settings, otherwise fall back to raw HTML (existing behaviour).
+  let message;
+
+  if (templateId) {
+    message = {
       to,
-      from: {
-        email: from,
-        name: fromName
-      },
+      from: { email: from, name: fromName },
+      templateId,
+      dynamicTemplateData: {
+        subject,
+        message: body // maps to {{message}} in your SendGrid template
+      }
+    };
+  } else {
+    message = {
+      to,
+      from: { email: from, name: fromName },
       subject,
       text: body.replace(/<[^>]*>/g, ''),
       html: body
-    });
+    };
+  }
+
+  try {
+    await sgMail.send(message);
 
     return logEmail({
       userId,
