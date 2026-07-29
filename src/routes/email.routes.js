@@ -1,5 +1,5 @@
 const express = require('express');
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const asyncHandler = require('../utils/asyncHandler');
@@ -16,7 +16,14 @@ router.post('/send',
   body('body').notEmpty(),
   validate,
   asyncHandler(async (req, res) => {
-    const data = req.body.data || {};
+    // Merge explicit data blob with top-level storeName/domain fields so
+    // personalize() can replace all placeholder formats in the template.
+    const data = {
+      ...(req.body.data || {}),
+      name: req.body.storeName || req.body.data?.name || '',
+      storeName: req.body.storeName || req.body.data?.storeName || '',
+      domain: req.body.storeName || req.body.data?.domain || '',
+    };
     const log = await sendOne({
       userId: req.user.id,
       to: req.body.to,
@@ -24,7 +31,8 @@ router.post('/send',
       body: personalize(req.body.body, data),
       storeId: req.body.storeId,
       contactId: req.body.contactId,
-      campaignId: req.body.campaignId
+      campaignId: req.body.campaignId,
+      storeName: req.body.storeName || null,
     });
     res.json({ log });
   })
@@ -50,8 +58,20 @@ router.post('/bulk',
 );
 
 router.get('/logs', asyncHandler(async (req, res) => {
-  const { rows } = await db.query('SELECT * FROM email_logs WHERE user_id=$1 ORDER BY COALESCE(sent_at, NOW()) DESC', [req.user.id]);
+  const { rows } = await db.query(
+    'SELECT * FROM email_logs WHERE user_id=$1 ORDER BY COALESCE(sent_at, NOW()) DESC',
+    [req.user.id]
+  );
   res.json({ logs: rows });
+}));
+
+// Delete a single email log entry permanently
+router.delete('/logs/:id', asyncHandler(async (req, res) => {
+  await db.query(
+    'DELETE FROM email_logs WHERE id=$1 AND user_id=$2',
+    [req.params.id, req.user.id]
+  );
+  res.sendStatus(204);
 }));
 
 router.post('/log',
