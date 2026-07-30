@@ -20,9 +20,11 @@
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "express-validator": "^7.2.1",
+    "googleapis": "^140.0.0",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "node-cron": "^3.0.3",
     "nodemailer": "^6.9.16",
     "pg": "^8.13.1",
     "robots-parser": "^3.0.1"
