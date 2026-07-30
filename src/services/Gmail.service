@@ -1,0 +1,147 @@
+const { google } = require('googleapis');
+const db = require('../db');
+
+const getOAuthClient = () => new google.auth.OAuth2(
+  process.env.GMAIL_CLIENT_ID,
+  process.env.GMAIL_CLIENT_SECRET,
+  process.env.GMAIL_REDIRECT_URI
+);
+
+const SCOPES = [
+  'https://www.googleapis.com/auth/gmail.readonly'
+];
+
+const getAuthUrl = () => {
+  const client = getOAuthClient();
+  return client.generateAuthUrl({
+    access_type: 'offline',
+    prompt: 'consent',
+    scope: SCOPES
+  });
+};
+
+const exchangeCode = async (code, userId) => {
+  const client = getOAuthClient();
+  const { tokens } = await client.getToken(code);
+
+  await db.query(
+    `UPDATE user_settings
+     SET gmail_access_token=$1, gmail_refresh_token=$2, gmail_token_expiry=$3
+     WHERE user_id=$4`,
+    [tokens.access_token, tokens.refresh_token, tokens.expiry_date, userId]
+  );
+
+  return tokens;
+};
+
+const getAuthenticatedClient = async (userId) => {
+  const { rows } = await db.query(
+    'SELECT gmail_access_token, gmail_refresh_token, gmail_token_expiry FROM user_settings WHERE user_id=$1',
+    [userId]
+  );
+
+  const settings = rows[0];
+  if (!settings?.gmail_refresh_token) {
+    throw new Error('Gmail not connected — please connect in Settings');
+  }
+
+  const client = getOAuthClient();
+  client.setCredentials({
+    access_token: settings.gmail_access_token,
+    refresh_token: settings.gmail_refresh_token,
+    expiry_date: settings.gmail_token_expiry
+  });
+
+  // Auto-refresh token if expired
+  client.on('tokens', async (tokens) => {
+    await db.query(
+      `UPDATE user_settings
+       SET gmail_access_token=$1, gmail_token_expiry=$2
+       WHERE user_id=$3`,
+      [tokens.access_token, tokens.expiry_date, userId]
+    );
+  });
+
+  return client;
+};
+
+const disconnectGmail = async (userId) => {
+  await db.query(
+    `UPDATE user_settings
+     SET gmail_access_token=NULL, gmail_refresh_token=NULL, gmail_token_expiry=NULL
+     WHERE user_id=$1`,
+    [userId]
+  );
+};
+
+const isGmailConnected = async (userId) => {
+  const { rows } = await db.query(
+    'SELECT gmail_refresh_token FROM user_settings WHERE user_id=$1',
+    [userId]
+  );
+  return !!(rows[0]?.gmail_refresh_token);
+};
+
+// Check Gmail for replies to emails we sent, update email_logs accordingly
+const pollReplies = async (userId) => {
+  try {
+    const client = await getAuthenticatedClient(userId);
+    const gmail = google.gmail({ version: 'v1', auth: client });
+
+    // Get emails we sent that haven't been replied to yet
+    const { rows: sentEmails } = await db.query(
+      `SELECT id, to_email, subject FROM email_logs
+       WHERE user_id=$1 AND status='sent' AND replied IS DISTINCT FROM 'Yes'
+       AND sent_at > NOW() - INTERVAL '30 days'`,
+      [userId]
+    );
+
+    if (sentEmails.length === 0) return;
+
+    // Search Gmail inbox for replies from these email addresses
+    const senderEmails = [...new Set(sentEmails.map(e => e.to_email))];
+    const query = `from:(${senderEmails.join(' OR ')}) in:inbox`;
+
+    const listRes = await gmail.users.messages.list({
+      userId: 'me',
+      q: query,
+      maxResults: 50
+    });
+
+    const messages = listRes.data.messages || [];
+    if (messages.length === 0) return;
+
+    // For each message, check if it matches a sent email
+    for (const msg of messages) {
+      const detail = await gmail.users.messages.get({
+        userId: 'me',
+        id: msg.id,
+        format: 'metadata',
+        metadataHeaders: ['From', 'Subject', 'In-Reply-To', 'References']
+      });
+
+      const headers = detail.data.payload?.headers || [];
+      const from = headers.find(h => h.name === 'From')?.value || '';
+      const fromEmail = from.match(/<(.+)>/)?.[1] || from.trim();
+
+      // Match against our sent emails by sender address
+      const matched = sentEmails.filter(e =>
+        e.to_email && fromEmail.toLowerCase().includes(e.to_email.toLowerCase())
+      );
+
+      for (const log of matched) {
+        await db.query(
+          `UPDATE email_logs SET replied='Yes', replied_at=NOW()
+           WHERE id=$1 AND replied IS DISTINCT FROM 'Yes'`,
+          [log.id]
+        );
+        console.log(`Reply detected from ${fromEmail} for log ${log.id}`);
+      }
+    }
+  } catch (err) {
+    // Don't crash the poller — log and continue
+    console.error(`Reply poll error for user ${userId}:`, err.message);
+  }
+};
+
+module.exports = { getAuthUrl, exchangeCode, getAuthenticatedClient, disconnectGmail, isGmailConnected, pollReplies };
