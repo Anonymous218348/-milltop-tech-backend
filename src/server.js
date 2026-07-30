@@ -2,11 +2,13 @@ require('dotenv').config();
 
 const app = require('./app');
 const { pool } = require('./db');
+const { startReplyPoller } = require('./jobs/replyPoller');
 
 const port = process.env.PORT || 5000;
 
 const server = app.listen(port, () => {
   console.log(`MILLTOP TECH API running on port ${port}`);
+  startReplyPoller();
 });
 
 const shutdown = async () => {
