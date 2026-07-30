@@ -11,7 +11,6 @@ const axios = require('axios');
 const router = express.Router();
 router.use(requireAuth);
 
-// Quick check — skips dead/unreachable sites before wasting PageSpeed quota
 const isSiteAlive = async (url) => {
   try {
     const res = await axios.head(url, {
@@ -95,21 +94,12 @@ router.post('/scan',
   })
 );
 
-// Returns scanned stores, excluding any that already have a successfully
-// sent email logged so the Email Sender table doesn't show stores
-// you've already emailed after a refresh.
+// Returns ALL scanned stores — scanner tab shows everything regardless
+// of whether an email was sent. Only the Email Sender tab filters sent stores.
 router.get('/results', asyncHandler(async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT s.* FROM stores s
-       WHERE s.user_id = $1
-       AND s.id NOT IN (
-         SELECT DISTINCT store_id FROM email_logs
-         WHERE user_id = $1
-         AND store_id IS NOT NULL
-         AND status = 'sent'
-       )
-       ORDER BY s.created_at DESC`,
+      `SELECT * FROM stores WHERE user_id = $1 ORDER BY created_at DESC`,
       [req.user.id]
     );
     res.json({ stores: rows });
