@@ -45,12 +45,24 @@ const scanSingleUrl = async (url, apiKey, userId) => {
       runPageSpeed(url, 'mobile', apiKey),
       runPageSpeed(url, 'desktop', apiKey)
     ]);
+
+    // Use UPSERT so re-scanning a URL always updates scores instead of
+    // silently skipping (ON CONFLICT DO NOTHING caused N/A on refresh).
     const { rows } = await db.query(
       `INSERT INTO stores (
         user_id, url, mobile_performance, desktop_performance, mobile_seo, desktop_seo,
         mobile_best_practices, desktop_best_practices, mobile_accessibility, desktop_accessibility
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-      ON CONFLICT DO NOTHING
+      ON CONFLICT (user_id, url) DO UPDATE SET
+        mobile_performance = EXCLUDED.mobile_performance,
+        desktop_performance = EXCLUDED.desktop_performance,
+        mobile_seo = EXCLUDED.mobile_seo,
+        desktop_seo = EXCLUDED.desktop_seo,
+        mobile_best_practices = EXCLUDED.mobile_best_practices,
+        desktop_best_practices = EXCLUDED.desktop_best_practices,
+        mobile_accessibility = EXCLUDED.mobile_accessibility,
+        desktop_accessibility = EXCLUDED.desktop_accessibility,
+        created_at = NOW()
       RETURNING *`,
       [
         userId, url,
@@ -94,8 +106,8 @@ router.post('/scan',
   })
 );
 
-// Returns ALL scanned stores — scanner tab shows everything regardless
-// of whether an email was sent. Only the Email Sender tab filters sent stores.
+// Returns ALL scanned stores — scanner tab shows everything.
+// Only the Email Sender tab filters sent stores (done on frontend).
 router.get('/results', asyncHandler(async (req, res) => {
   try {
     const { rows } = await db.query(
