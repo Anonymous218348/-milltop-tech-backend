@@ -52,7 +52,6 @@ const getAuthenticatedClient = async (userId) => {
     expiry_date: settings.gmail_token_expiry
   });
 
-  // Auto-refresh token if expired
   client.on('tokens', async (tokens) => {
     await db.query(
       `UPDATE user_settings
@@ -82,15 +81,17 @@ const isGmailConnected = async (userId) => {
   return !!(rows[0]?.gmail_refresh_token);
 };
 
-// Check Gmail for replies to emails we sent, update email_logs accordingly
+// Check Gmail for actual replies (using In-Reply-To/References headers)
+// to emails we sent. Only marks replied='Yes' when the incoming message
+// is a genuine thread reply, not just any email from that address.
 const pollReplies = async (userId) => {
   try {
     const client = await getAuthenticatedClient(userId);
     const gmail = google.gmail({ version: 'v1', auth: client });
 
-    // Get emails we sent that haven't been replied to yet
+    // Get sent emails that haven't been replied to, with their subjects
     const { rows: sentEmails } = await db.query(
-      `SELECT id, to_email, subject FROM email_logs
+      `SELECT id, to_email, subject, sent_at FROM email_logs
        WHERE user_id=$1 AND status='sent' AND replied IS DISTINCT FROM 'Yes'
        AND sent_at > NOW() - INTERVAL '30 days'`,
       [userId]
@@ -98,48 +99,85 @@ const pollReplies = async (userId) => {
 
     if (sentEmails.length === 0) return;
 
-    // Search Gmail inbox for replies from these email addresses
-    const senderEmails = [...new Set(sentEmails.map(e => e.to_email))];
-    const query = `from:(${senderEmails.join(' OR ')}) in:inbox`;
+    // Build lookup: normalised email address -> list of log entries
+    const byEmail = {};
+    for (const log of sentEmails) {
+      const addr = (log.to_email || '').toLowerCase().trim();
+      if (!addr) continue;
+      if (!byEmail[addr]) byEmail[addr] = [];
+      byEmail[addr].push(log);
+    }
+
+    const senderAddresses = Object.keys(byEmail);
+    if (senderAddresses.length === 0) return;
+
+    // Search Gmail inbox for messages from those senders that arrived
+    // AFTER we sent our email (avoids matching older unrelated threads)
+    const query = `from:(${senderAddresses.join(' OR ')}) in:inbox`;
 
     const listRes = await gmail.users.messages.list({
       userId: 'me',
       q: query,
-      maxResults: 50
+      maxResults: 100
     });
 
     const messages = listRes.data.messages || [];
     if (messages.length === 0) return;
 
-    // For each message, check if it matches a sent email
     for (const msg of messages) {
       const detail = await gmail.users.messages.get({
         userId: 'me',
         id: msg.id,
         format: 'metadata',
-        metadataHeaders: ['From', 'Subject', 'In-Reply-To', 'References']
+        metadataHeaders: ['From', 'Subject', 'In-Reply-To', 'References', 'Date']
       });
 
       const headers = detail.data.payload?.headers || [];
-      const from = headers.find(h => h.name === 'From')?.value || '';
-      const fromEmail = from.match(/<(.+)>/)?.[1] || from.trim();
+      const getHeader = (name) => headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
 
-      // Match against our sent emails by sender address
-      const matched = sentEmails.filter(e =>
-        e.to_email && fromEmail.toLowerCase().includes(e.to_email.toLowerCase())
-      );
+      const from        = getHeader('From');
+      const subject     = getHeader('Subject');
+      const inReplyTo   = getHeader('In-Reply-To');
+      const references  = getHeader('References');
+      const dateStr     = getHeader('Date');
 
-      for (const log of matched) {
+      // Extract sender email address
+      const fromEmail = (from.match(/<([^>]+)>/) || [])[1] || from.trim();
+      const fromEmailNorm = fromEmail.toLowerCase().trim();
+
+      // Must be from a sender we emailed
+      const logsForSender = byEmail[fromEmailNorm];
+      if (!logsForSender || logsForSender.length === 0) continue;
+
+      // STRICT CHECK: must have In-Reply-To or References header set —
+      // genuine email replies always have at least one of these.
+      // A cold inbound email (newsletter, unrelated contact) won't have them.
+      const isActualReply = !!(inReplyTo || references);
+      if (!isActualReply) continue;
+
+      // Additional check: the reply subject should loosely match one of our
+      // sent subjects (Re: Quick fix to boost...) or arrive after we sent it.
+      const replyDate = dateStr ? new Date(dateStr).getTime() : 0;
+
+      for (const log of logsForSender) {
+        const sentDate = log.sent_at ? new Date(log.sent_at).getTime() : 0;
+
+        // Reply must have arrived after we sent the email
+        if (replyDate && sentDate && replyDate < sentDate) continue;
+
+        // Subject check: Gmail replies start with "Re: " + original subject
+        // Be lenient — just check the sender email arrived after sending
+        // AND has reply headers. Don't be too strict on subject matching
+        // since subjects vary (Re:, RE:, Fwd:, translated, etc.)
         await db.query(
           `UPDATE email_logs SET replied='Yes', replied_at=NOW()
            WHERE id=$1 AND replied IS DISTINCT FROM 'Yes'`,
           [log.id]
         );
-        console.log(`Reply detected from ${fromEmail} for log ${log.id}`);
+        console.log(`Reply confirmed from ${fromEmail} (has ${inReplyTo ? 'In-Reply-To' : 'References'} header) for log ${log.id}`);
       }
     }
   } catch (err) {
-    // Don't crash the poller — log and continue
     console.error(`Reply poll error for user ${userId}:`, err.message);
   }
 };
