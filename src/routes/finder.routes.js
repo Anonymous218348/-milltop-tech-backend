@@ -13,21 +13,41 @@ router.use(requireAuth);
 
 const updateOrCreateStore = async (userId, domain, result) => {
   const url = normalizeUrl(domain);
+
+  // Prefer the row that already has performance scores — this avoids
+  // overwriting a scanned row's scores with a new empty row.
+  // If multiple rows exist for the same URL, pick the one with scores first.
   const existing = await db.query(
-    'SELECT * FROM stores WHERE user_id = $1 AND url = $2 ORDER BY created_at DESC LIMIT 1',
+    `SELECT * FROM stores 
+     WHERE user_id = $1 AND url = $2 
+     ORDER BY 
+       CASE WHEN mobile_performance IS NOT NULL THEN 0 ELSE 1 END,
+       created_at DESC 
+     LIMIT 1`,
     [userId, url]
   );
 
   if (existing.rows[0]) {
+    // Update email on the correct row (the one with scores)
     const { rows } = await db.query(
       `UPDATE stores SET contact_email = $1, email_source = $2, email_status = $3, flagged = $4
        WHERE id = $5 AND user_id = $6
        RETURNING *`,
       [result.email, result.source, result.status, result.flagged, existing.rows[0].id, userId]
     );
+
+    // Clean up any duplicate rows for this URL that have no scores
+    await db.query(
+      `DELETE FROM stores 
+       WHERE user_id = $1 AND url = $2 AND id != $3 
+       AND mobile_performance IS NULL AND desktop_performance IS NULL`,
+      [userId, url, existing.rows[0].id]
+    );
+
     return rows[0];
   }
 
+  // No existing row — create one
   const { rows } = await db.query(
     `INSERT INTO stores (user_id, url, contact_email, email_source, email_status, flagged)
      VALUES ($1, $2, $3, $4, $5, $6)
