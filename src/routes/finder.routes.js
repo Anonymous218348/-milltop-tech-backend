@@ -7,13 +7,13 @@ const { validate } = require('../utils/validation');
 const { findEmailForDomain } = require('../services/finder.service');
 const { getApiKey } = require('../services/settings.service');
 const { normalizeUrl } = require('../utils/url');
-
+ 
 const router = express.Router();
 router.use(requireAuth);
-
+ 
 const updateOrCreateStore = async (userId, domain, result) => {
   const url = normalizeUrl(domain);
-
+ 
   // Prefer the row that already has performance scores — this avoids
   // overwriting a scanned row's scores with a new empty row.
   // If multiple rows exist for the same URL, pick the one with scores first.
@@ -26,7 +26,7 @@ const updateOrCreateStore = async (userId, domain, result) => {
      LIMIT 1`,
     [userId, url]
   );
-
+ 
   if (existing.rows[0]) {
     // Update email on the correct row (the one with scores)
     const { rows } = await db.query(
@@ -35,7 +35,7 @@ const updateOrCreateStore = async (userId, domain, result) => {
        RETURNING *`,
       [result.email, result.source, result.status, result.flagged, existing.rows[0].id, userId]
     );
-
+ 
     // Clean up any duplicate rows for this URL that have no scores
     await db.query(
       `DELETE FROM stores 
@@ -43,10 +43,10 @@ const updateOrCreateStore = async (userId, domain, result) => {
        AND mobile_performance IS NULL AND desktop_performance IS NULL`,
       [userId, url, existing.rows[0].id]
     );
-
+ 
     return rows[0];
   }
-
+ 
   // No existing row — create one
   const { rows } = await db.query(
     `INSERT INTO stores (user_id, url, contact_email, email_source, email_status, flagged)
@@ -56,7 +56,7 @@ const updateOrCreateStore = async (userId, domain, result) => {
   );
   return rows[0];
 };
-
+ 
 router.post('/find',
   body('domain').notEmpty(),
   validate,
@@ -67,7 +67,7 @@ router.post('/find',
     res.json({ store });
   })
 );
-
+ 
 router.post('/bulk',
   body('domains').isArray({ min: 1 }),
   body('domains.*').notEmpty(),
@@ -83,7 +83,7 @@ router.post('/bulk',
     res.json({ stores: results });
   })
 );
-
+ 
 router.put('/:id/manual',
   param('id').isUUID(),
   body('email').isEmail().normalizeEmail(),
@@ -98,5 +98,70 @@ router.put('/:id/manual',
     res.json({ store: rows[0] || null });
   })
 );
-
+ 
 module.exports = router;
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
