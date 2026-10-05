@@ -275,14 +275,14 @@ const handleDeepAudit = async (chatId, input) => {
     const audit = await runDeepAudit(url);
 
     await db.query(
-      \`UPDATE stores
+      `UPDATE stores
        SET deep_findings=$1, deep_priority=$2, deep_scanned_at=NOW()
-       WHERE user_id=$3 AND url=$4\`,
+       WHERE user_id=$3 AND url=$4`,
       [JSON.stringify(audit.findings), audit.priority, user.id, url]
     );
 
     const findings = audit.findings.slice(0, 8).map((f, i) =>
-      \`${i + 1}. [${f.severity.toUpperCase()}] ${escapeMd(f.title)} — ${escapeMd(f.evidence)}\\n   ${escapeMd(f.url)}\`
+      `${i + 1}. [${f.severity.toUpperCase()}] ${escapeMd(f.title)} — ${escapeMd(f.evidence)}\\n   ${escapeMd(f.url)}`
     ).join('\n');
 
     await sendMessage(chatId, `
@@ -295,7 +295,7 @@ Pages checked: *${audit.pages}*
 ${findings || 'No concrete issues found by the automated checks.'}
     `.trim());
   } catch (e) {
-    await sendMessage(chatId, \`❌ Deep audit failed: ${escapeMd(e.message)}\`);
+    await sendMessage(chatId, `❌ Deep audit failed: ${escapeMd(e.message)}`);
   }
 };
 
