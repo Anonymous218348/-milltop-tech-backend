@@ -8,6 +8,7 @@ const { normalizeUrl } = require('../utils/url');
 const { runPageSpeed } = require('../services/pagespeed.service');
 const { findEmailForDomain } = require('../services/finder.service');
 const { getApiKey, getSettings } = require('../services/settings.service');
+const { runDeepAudit } = require('../services/deep-audit.service');
 
 const router = express.Router();
 
@@ -82,6 +83,7 @@ Here's what I can do:
 
 *Scanner*
 /scan https://store.com — Scan a website
+/deep https://store.com — Deep store audit
 /bulkscan — Scan up to 500 URLs at once (one per line)
 
 *Email Finder*
@@ -119,6 +121,17 @@ Just send me a URL and I'll scan it automatically!
     const url = text.split(/\s+/)[1];
     if (!url) { await sendMessage(chatId, '❌ Please provide a URL. Example: /scan https://store.com'); return; }
     await handleScan(chatId, url);
+    return;
+  }
+
+  // ── DEEP AUDIT ───────────────────────────────────────────────
+  if (lower.startsWith('/deep ') || lower.startsWith('/deep\\n')) {
+    const url = text.split(/\\s+/)[1];
+    if (!url) {
+      await sendMessage(chatId, '❌ Please provide a URL. Example: /deep https://store.com');
+      return;
+    }
+    await handleDeepAudit(chatId, url);
     return;
   }
 
@@ -246,6 +259,43 @@ Top Lighthouse findings:\n${(mobile.findings || []).slice(0, 3).map(f => `• ${
     `.trim());
   } catch (e) {
     await sendMessage(chatId, `❌ Scan failed: ${escapeMd(e.message)}`);
+  }
+};
+
+const handleDeepAudit = async (chatId, input) => {
+  await sendMessage(chatId, `🔎 Deep auditing *${escapeMd(input)}*...\\n_Checking the homepage and key catalog pages._`);
+  try {
+    const user = await getUser();
+    if (!user) {
+      await sendMessage(chatId, '❌ No user found in database.');
+      return;
+    }
+
+    const url = normalizeUrl(input).replace(/[\\/]+$/, '');
+    const audit = await runDeepAudit(url);
+
+    await db.query(
+      \`UPDATE stores
+       SET deep_findings=$1, deep_priority=$2, deep_scanned_at=NOW()
+       WHERE user_id=$3 AND url=$4\`,
+      [JSON.stringify(audit.findings), audit.priority, user.id, url]
+    );
+
+    const findings = audit.findings.slice(0, 8).map((f, i) =>
+      \`${i + 1}. [${f.severity.toUpperCase()}] ${escapeMd(f.title)} — ${escapeMd(f.evidence)}\\n   ${escapeMd(f.url)}\`
+    ).join('\\n');
+
+    await sendMessage(chatId, \`
+🔎 *Deep Audit: ${escapeMd(url)}*
+
+Priority: *${escapeMd(audit.priority)}*
+Pages checked: *${audit.pages}*
+
+*Findings*
+${findings || 'No concrete issues found by the automated checks.'}
+    \`.trim());
+  } catch (e) {
+    await sendMessage(chatId, \`❌ Deep audit failed: ${escapeMd(e.message)}\`);
   }
 };
 
