@@ -263,11 +263,11 @@ Top Lighthouse findings:\n${(mobile.findings || []).slice(0, 3).map(f => `• ${
 };
 
 const handleDeepAudit = async (chatId, input) => {
-  await sendMessage(chatId, `🔎 Deep auditing *${escapeMd(input)}*...\n_Checking the homepage and key catalog pages._`);
+  await sendMessage(chatId, '🔎 Deep auditing ' + input + '...\nChecking the homepage and key catalog pages.', { parse_mode: undefined });
   try {
     const user = await getUser();
     if (!user) {
-      await sendMessage(chatId, '❌ No user found in database.');
+      await sendMessage(chatId, '❌ No user found in database.', { parse_mode: undefined });
       return;
     }
 
@@ -275,27 +275,32 @@ const handleDeepAudit = async (chatId, input) => {
     const audit = await runDeepAudit(url);
 
     await db.query(
-      `UPDATE stores
-       SET deep_findings=$1, deep_priority=$2, deep_scanned_at=NOW()
-       WHERE user_id=$3 AND url=$4`,
-      [JSON.stringify(audit.findings), audit.priority, user.id, url]
+      'INSERT INTO stores (user_id, url, deep_findings, deep_priority, deep_scanned_at) ' +
+      'VALUES ($1, $2, $3, $4, NOW()) ' +
+      'ON CONFLICT (user_id, url) DO UPDATE SET ' +
+      'deep_findings = EXCLUDED.deep_findings, ' +
+      'deep_priority = EXCLUDED.deep_priority, ' +
+      'deep_scanned_at = EXCLUDED.deep_scanned_at',
+      [user.id, url, JSON.stringify(audit.findings), audit.priority]
     );
 
     const findings = audit.findings.slice(0, 8).map((f, i) =>
-      `${i + 1}. [${f.severity.toUpperCase()}] ${escapeMd(f.title)} — ${escapeMd(f.evidence)}\\n   ${escapeMd(f.url)}`
-    ).join('\n');
+      (i + 1) + '. ' + f.severity.toUpperCase() + ' — ' + f.title +
+      '\n   ' + f.evidence +
+      '\n   ' + f.url
+    ).join('\n\n');
 
-    await sendMessage(chatId, `
-🔎 *Deep Audit: ${escapeMd(url)}*
-
-Priority: *${escapeMd(audit.priority)}*
-Pages checked: *${audit.pages}*
-
-*Findings*
-${findings || 'No concrete issues found by the automated checks.'}
-    `.trim());
+    await sendMessage(chatId, [
+      '🔎 Deep Audit: ' + url,
+      '',
+      'Priority: ' + audit.priority,
+      'Pages checked: ' + audit.pages,
+      '',
+      'Findings',
+      findings || 'No concrete issues found by the automated checks.'
+    ].join('\n'), { parse_mode: undefined });
   } catch (e) {
-    await sendMessage(chatId, `❌ Deep audit failed: ${escapeMd(e.message)}`);
+    await sendMessage(chatId, '❌ Deep audit failed: ' + e.message, { parse_mode: undefined });
   }
 };
 
