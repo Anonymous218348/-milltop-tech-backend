@@ -125,8 +125,8 @@ Just send me a URL and I'll scan it automatically!
   }
 
   // ── DEEP AUDIT ───────────────────────────────────────────────
-  if (lower.startsWith('/deep ') || lower.startsWith('/deep\\n')) {
-    const url = text.split(/\\s+/)[1];
+  if (lower.startsWith('/deep ') || lower.startsWith('/deep\n')) {
+    const url = text.split(/\s+/)[1];
     if (!url) {
       await sendMessage(chatId, '❌ Please provide a URL. Example: /deep https://store.com');
       return;
@@ -263,7 +263,7 @@ Top Lighthouse findings:\n${(mobile.findings || []).slice(0, 3).map(f => `• ${
 };
 
 const handleDeepAudit = async (chatId, input) => {
-  await sendMessage(chatId, `🔎 Deep auditing *${escapeMd(input)}*...\\n_Checking the homepage and key catalog pages._`);
+  await sendMessage(chatId, `🔎 Deep auditing *${escapeMd(input)}*...\n_Checking the homepage and key catalog pages._`);
   try {
     const user = await getUser();
     if (!user) {
@@ -283,9 +283,9 @@ const handleDeepAudit = async (chatId, input) => {
 
     const findings = audit.findings.slice(0, 8).map((f, i) =>
       \`${i + 1}. [${f.severity.toUpperCase()}] ${escapeMd(f.title)} — ${escapeMd(f.evidence)}\\n   ${escapeMd(f.url)}\`
-    ).join('\\n');
+    ).join('\n');
 
-    await sendMessage(chatId, \`
+    await sendMessage(chatId, `
 🔎 *Deep Audit: ${escapeMd(url)}*
 
 Priority: *${escapeMd(audit.priority)}*
@@ -293,7 +293,7 @@ Pages checked: *${audit.pages}*
 
 *Findings*
 ${findings || 'No concrete issues found by the automated checks.'}
-    \`.trim());
+    `.trim());
   } catch (e) {
     await sendMessage(chatId, \`❌ Deep audit failed: ${escapeMd(e.message)}\`);
   }
