@@ -34,6 +34,9 @@ CREATE TABLE IF NOT EXISTS stores (
   email_source TEXT,
   email_status TEXT NOT NULL DEFAULT 'Not Checked',
   flagged BOOLEAN NOT NULL DEFAULT false,
+  deep_findings JSONB NOT NULL DEFAULT '[]'::jsonb,
+  deep_priority TEXT NOT NULL DEFAULT 'NONE',
+  deep_scanned_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -107,7 +110,11 @@ CREATE TABLE IF NOT EXISTS tracker (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_stores_user_url_unique ON stores(user_id, url);
 CREATE INDEX IF NOT EXISTS idx_stores_user_id ON stores(user_id);
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS deep_findings JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS deep_priority TEXT NOT NULL DEFAULT 'NONE';
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS deep_scanned_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS idx_contacts_user_id ON contacts(user_id);
 CREATE INDEX IF NOT EXISTS idx_templates_user_id ON templates(user_id);
 CREATE INDEX IF NOT EXISTS idx_campaigns_user_id ON campaigns(user_id);
