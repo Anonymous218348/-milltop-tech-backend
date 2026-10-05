@@ -210,6 +210,15 @@ const handleScan = async (chatId, input) => {
       `INSERT INTO stores (user_id, url, mobile_performance, desktop_performance, mobile_seo, desktop_seo,
         mobile_best_practices, desktop_best_practices, mobile_accessibility, desktop_accessibility)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+       ON CONFLICT (user_id, url) DO UPDATE SET
+         mobile_performance = EXCLUDED.mobile_performance,
+         desktop_performance = EXCLUDED.desktop_performance,
+         mobile_seo = EXCLUDED.mobile_seo,
+         desktop_seo = EXCLUDED.desktop_seo,
+         mobile_best_practices = EXCLUDED.mobile_best_practices,
+         desktop_best_practices = EXCLUDED.desktop_best_practices,
+         mobile_accessibility = EXCLUDED.mobile_accessibility,
+         desktop_accessibility = EXCLUDED.desktop_accessibility
        RETURNING *`,
       [user.id, url, mobile.performance, desktop.performance, mobile.seo, desktop.seo,
        mobile.bestPractices, desktop.bestPractices, mobile.accessibility, desktop.accessibility]
