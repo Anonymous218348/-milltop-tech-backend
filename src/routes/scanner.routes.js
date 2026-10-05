@@ -35,7 +35,7 @@ const runDeepAudit = async (inputUrl) => {
       }
       if (typeof response.data !== 'string') continue;
       const $ = cheerio.load(response.data);
-      const text = $('body').text().replace(/\\s+/g, ' ').trim().toLowerCase();
+      const text = $('body').text().replace(/\s+/g, ' ').trim().toLowerCase();
       if (!$('title').length || !$('title').text().trim()) add('medium','seo','Missing page title','No title element was found.',pageUrl);
       if (!$('meta[name="description"]').attr('content')) add('medium','seo','Missing meta description','No meta description was found.',pageUrl);
       if (!$('meta[name="viewport"]').attr('content')) add('medium','ux','Missing mobile viewport','No viewport meta tag was found.',pageUrl);
@@ -48,7 +48,7 @@ const runDeepAudit = async (inputUrl) => {
       $('a[href]').each((_,el) => {
         try {
           const next = new URL($(el).attr('href'), pageUrl); next.hash = '';
-          if (next.origin === new URL(url).origin && /\\/(collections?|products?|shop|category|pages)\\//i.test(next.pathname) && !seen.has(next.href)) queue.push(next.href);
+          if (next.origin === new URL(url).origin && /\/(collections?|products?|shop|category|pages)\//i.test(next.pathname) && !seen.has(next.href)) queue.push(next.href);
         } catch {}
       });
     } catch (err) {
