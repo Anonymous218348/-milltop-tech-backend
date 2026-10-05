@@ -39,11 +39,11 @@ const callPageSpeed = async (url, strategy, apiKey, timeout) => {
 const runPageSpeed = async (url, strategy, apiKey) => {
   let data;
   try {
-    data = await callPageSpeed(url, strategy, apiKey, 90000);
+    data = await callPageSpeed(url, strategy, apiKey, 60000);
   } catch (err) {
     console.error('PageSpeed first attempt failed for ' + url + ' (' + strategy + '): ' + err.message);
     try {
-      data = await callPageSpeed(url, strategy, apiKey, 120000);
+      data = await callPageSpeed(url, strategy, apiKey, 30000);
     } catch (err2) {
       console.error('PageSpeed retry failed for ' + url + ' (' + strategy + '): ' + err2.message);
       return { performance: null, seo: null, bestPractices: null, accessibility: null, findings: [] };
