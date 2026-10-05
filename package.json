@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "migrate": "node src/db/migrate.js"
+    "migrate": "node src/db/migrate.js",
+    "prestart": "node src/db/migrate.js"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.3",
