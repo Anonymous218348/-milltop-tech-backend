@@ -16,6 +16,8 @@ const runDeepAudit = async (inputUrl) => {
   // Collection pages get priority because they are commercially important.
   const collectionQueue = [];
   const deadline = Date.now() + 60000;
+  const MAX_QUEUE = 60;
+  const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 
   const add = (severity, type, title, evidence, pageUrl) =>
     findings.push({
@@ -38,6 +40,8 @@ const runDeepAudit = async (inputUrl) => {
       const response = await axios.get(pageUrl, {
         timeout: 8000,
         maxRedirects: 4,
+        maxContentLength: MAX_RESPONSE_BYTES,
+        maxBodyLength: MAX_RESPONSE_BYTES,
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; MILLTOPTECH-Audit/1.0)'
         },
@@ -199,11 +203,11 @@ const runDeepAudit = async (inputUrl) => {
 
           // Collections are checked before other pages.
           if (/\/collections?\//i.test(next.pathname)) {
-            if (!collectionQueue.includes(next.href)) {
+            if (!collectionQueue.includes(next.href) && collectionQueue.length < MAX_QUEUE) {
               collectionQueue.push(next.href);
             }
           } else {
-            if (!queue.includes(next.href)) {
+            if (!queue.includes(next.href) && queue.length < MAX_QUEUE) {
               queue.push(next.href);
             }
           }
