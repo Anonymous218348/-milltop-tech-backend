@@ -300,14 +300,6 @@ const handleBulkScan = async (chatId, urls) => {
 
   await sendMessage(chatId, summary);
 
-  if (flaggedStores.length > 0) {
-    const chunkSize = 25;
-    for (let i = 0; i < flaggedStores.length; i += chunkSize) {
-      const chunk = flaggedStores.slice(i, i + chunkSize);
-      await sendMessage(chatId, `🎯 *Flagged Targets (${i + 1}-${Math.min(i + chunkSize, flaggedStores.length)})*\n\n${chunk.join('\n')}`);
-    }
-    await sendMessage(chatId, 'Use /find <url> on any of these to get their email, or check the Scanner tab in the app for the full list.');
-  }
 };
 
 const handleFind = async (chatId, input) => {
