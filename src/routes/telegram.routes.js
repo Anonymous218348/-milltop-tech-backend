@@ -242,7 +242,7 @@ SEO: ${scoreEmoji(store.desktop_seo)}
 
 ⚠️ Lighthouse scores are screening signals only. Use the website itself to verify a concrete issue before outreach.
 
-Top Lighthouse findings:\n${(mobile.findings || []).slice(0, 3).map(f => `• ${escapeMd(formatFinding(f))}`).join('\\n') || '• No major automated findings returned.'}\n\nUse /find ${input} to find their email.
+Top Lighthouse findings:\n${(mobile.findings || []).slice(0, 3).map(f => `• ${escapeMd(formatFinding(f))}`).join('\n') || '• No major automated findings returned.'}\n\nUse /find ${input} to find their email.
     `.trim());
   } catch (e) {
     await sendMessage(chatId, `❌ Scan failed: ${escapeMd(e.message)}`);
