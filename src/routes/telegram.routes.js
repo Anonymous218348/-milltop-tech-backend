@@ -50,6 +50,8 @@ const getUser = async () => {
 };
 
 // Format score with emoji
+const formatFinding = (finding) => `${finding.title}${finding.displayValue ? ` — ${finding.displayValue}` : ''}`;
+
 const scoreEmoji = (score) => {
   if (score === null || score === undefined) return '❓ N/A';
   if (score >= 90) return `🟢 ${score}`;
@@ -229,9 +231,9 @@ Accessibility: ${scoreEmoji(store.mobile_accessibility)}
 Performance: ${scoreEmoji(store.desktop_performance)}
 SEO: ${scoreEmoji(store.desktop_seo)}
 
-${store.mobile_performance < 70 ? '⚠️ Low mobile performance — good outreach target!' : ''}
+⚠️ Lighthouse scores are screening signals only. Use the website itself to verify a concrete issue before outreach.
 
-Use /find ${input} to find their email.
+Top Lighthouse findings:\n${(mobile.findings || []).slice(0, 3).map(f => `• ${escapeMd(formatFinding(f))}`).join('\\n') || '• No major automated findings returned.'}\n\nUse /find ${input} to find their email.
     `.trim());
   } catch (e) {
     await sendMessage(chatId, `❌ Scan failed: ${escapeMd(e.message)}`);
@@ -251,7 +253,6 @@ const handleBulkScan = async (chatId, urls) => {
   let scanned = 0;
   let flagged = 0;
   let failed = 0;
-  const flaggedStores = [];
 
   for (const input of urls) {
     try {
@@ -274,12 +275,6 @@ const handleBulkScan = async (chatId, urls) => {
       const store = rows[0];
       const domain = url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
 
-      if ((store.mobile_performance !== null && store.mobile_performance < 70) ||
-          (store.mobile_seo !== null && store.mobile_seo < 70)) {
-        flagged++;
-        flaggedStores.push(`${escapeMd(domain)} — Perf: ${store.mobile_performance ?? '?'} | SEO: ${store.mobile_seo ?? '?'}`);
-      }
-
       scanned++;
     } catch (e) {
       failed++;
@@ -287,7 +282,7 @@ const handleBulkScan = async (chatId, urls) => {
     }
 
     if (scanned % 20 === 0 || scanned + failed === total) {
-      await sendMessage(chatId, `📊 Progress: ${scanned + failed}/${total} scanned (${flagged} flagged, ${failed} failed)`);
+      await sendMessage(chatId, `📊 Progress: ${scanned + failed}/${total} scanned (${failed} failed)`);
     }
 
     // Small delay to avoid hammering PageSpeed API and Telegram rate limits
@@ -299,7 +294,7 @@ const handleBulkScan = async (chatId, urls) => {
 
 📦 Total: ${total}
 ✅ Scanned: ${scanned}
-🎯 Flagged as targets: ${flagged}
+🎯 Automated target flags: disabled
 ❌ Failed: ${failed}
   `.trim();
 
