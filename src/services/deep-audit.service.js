@@ -15,6 +15,7 @@ const runDeepAudit = async (inputUrl) => {
 
   // Collection pages get priority because they are commercially important.
   const collectionQueue = [];
+  const deadline = Date.now() + 60000;
 
   const add = (severity, type, title, evidence, pageUrl) =>
     findings.push({
@@ -25,7 +26,7 @@ const runDeepAudit = async (inputUrl) => {
       url: pageUrl
     });
 
-  while ((collectionQueue.length || queue.length) && pages.length < 20) {
+  while ((collectionQueue.length || queue.length) && pages.length < 20 && Date.now() < deadline) {
     const pageUrl = collectionQueue.length
       ? collectionQueue.shift()
       : queue.shift();
